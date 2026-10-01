@@ -1,0 +1,15 @@
+/* About page: Figma's blue information panel and integration note. */
+.about-page { min-height: 70vh; padding: 64px 0; }
+.about-panel { border-radius: 28px; background: #075fc7; padding: 56px; color: #fff; }
+.about-title { max-width: 720px; margin: 24px 0 0; font-size: 40px; line-height: 1.08; letter-spacing: -.04em; }
+.about-copy { max-width: 720px; margin: 20px 0 0; color: rgba(239,246,255,.7); line-height: 1.75; }
+.about-features { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 40px; }
+.about-feature { border: 1px solid rgba(255,255,255,.1); border-radius: 16px; background: rgba(255,255,255,.06); padding: 20px; }
+.about-feature .icon { color: #93c5fd; }
+.about-feature h2 { margin: 16px 0 0; font-size: 16px; }
+.about-feature p { margin: 8px 0 0; color: rgba(239,246,255,.6); font-size: 14px; line-height: 1.6; }
+.about-note { margin-top: 32px; border: 1px solid var(--border); border-radius: 16px; background: #fff; padding: 28px; }
+.about-note h2 { margin: 0; font-size: 20px; }
+.about-note p { margin: 8px 0 0; color: #64748b; font-size: 14px; line-height: 1.7; }
+.about-note code { border-radius: 6px; background: #f1f5f9; padding: 4px 6px; color: #1d4ed8; font-size: 12px; }
+@media (max-width: 800px) { .about-panel { padding: 32px; } .about-features { grid-template-columns: 1fr; } .about-title { font-size: 32px; } }

@@ -1,0 +1,10 @@
+/* Admin page: compact dashboard using the same colors and spacing as the Figma system. */
+.admin-page { min-height: 70vh; padding: 56px 0; }
+.admin-heading { margin-bottom: 24px; }
+.admin-title { margin: 16px 0 0; font-size: 32px; letter-spacing: -.04em; }
+.admin-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.admin-card { border: 1px solid var(--border); border-radius: 16px; background: #fff; padding: 20px; }
+.admin-card-label { color: #94a3b8; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.admin-card-value { margin: 12px 0 0; color: #2563eb; font-size: 32px; font-weight: 700; }
+.admin-card-note { margin: 4px 0 0; color: #64748b; font-size: 12px; }
+@media (max-width: 700px) { .admin-grid { grid-template-columns: 1fr; } }

@@ -1,0 +1,8 @@
+/* Profile page: simple account form using the same Figma card language. */
+.profile-page { min-height: 70vh; padding: 56px 0; }
+.profile-card { max-width: 720px; margin: 0 auto; border: 1px solid var(--border); border-radius: 24px; background: #fff; padding: 32px; box-shadow: 0 4px 12px rgba(15,23,42,.03); }
+.profile-head { display: flex; align-items: center; gap: 16px; }
+.profile-avatar { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 16px; background: linear-gradient(135deg,#3b82f6,#1d4ed8); color: #fff; font-size: 20px; font-weight: 700; }
+.profile-title { margin: 0; font-size: 24px; }
+.profile-copy { margin: 4px 0 0; color: #64748b; font-size: 14px; }
+.profile-form { display: grid; gap: 18px; margin-top: 32px; }

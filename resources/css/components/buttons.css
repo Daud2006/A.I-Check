@@ -1,0 +1,14 @@
+/* Reusable buttons matching the Figma visual language. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; padding: 12px 20px; font-size: 14px; font-weight: 700; transition: .2s ease; }
+.btn-primary { background: var(--blue-700); color: #fff; }
+.btn-primary:hover { background: #0757ba; }
+.btn-light-blue { background: #59b5ff; color: #063c80; box-shadow: 0 14px 28px rgba(0,0,0,.18); }
+.btn-light-blue:hover { background: #80c8ff; transform: translateY(-1px); }
+.btn-outline { border: 1px solid rgba(255,255,255,.15); background: transparent; color: #fff; }
+.btn-outline:hover { background: rgba(255,255,255,.1); }
+.btn-secondary { border: 1px solid var(--border); background: #fff; color: #475569; }
+.btn-secondary:hover { background: #f8fafc; }
+.btn-danger-outline { border: 1px solid var(--border); background: #fff; color: #64748b; }
+.btn-danger-outline:hover { border-color: #fecaca; color: #ef4444; }
+.btn-full { width: 100%; }
+.btn:disabled { cursor: wait; opacity: .6; }

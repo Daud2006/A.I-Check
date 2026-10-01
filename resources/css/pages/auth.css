@@ -1,0 +1,16 @@
+/* Menata modal otorisasi untuk login dan pendaftaran pengguna dengan tampilan yang konsisten. */
+.modal-otorisasi { position: fixed; inset: 0; z-index: 70; display: none; place-items: center; padding: 20px; background: rgba(5,42,82,.65); backdrop-filter: blur(8px); }
+.modal-otorisasi.is-open { display: grid; }
+.panel-otorisasi { width: min(100%, 448px); max-height: calc(100vh - 40px); overflow: auto; border-radius: 24px; background: #fff; padding: 28px; box-shadow: 0 30px 70px rgba(15,23,42,.2); }
+.kepala-modal { display: flex; align-items: center; justify-content: space-between; }
+.ikon-modal { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: #eff6ff; color: #1d4ed8; }
+.tombol-tutup-modal { display: grid; place-items: center; border: 0; border-radius: 9px; padding: 8px; background: transparent; color: #94a3b8; }
+.tombol-tutup-modal:hover { background: #f1f5f9; }
+.judul-modal { margin: 24px 0 0; font-size: 24px; }
+.deskripsi-modal { margin: 8px 0 0; color: #64748b; font-size: 14px; line-height: 1.6; }
+.formulir-otorisasi { display: grid; gap: 16px; margin-top: 28px; }
+.bungkus-sandi { position: relative; }
+.bungkus-sandi .form-control { padding-right: 44px; }
+.tombol-lihat-sandi { position: absolute; right: 8px; top: 8px; display: grid; place-items: center; border: 0; background: transparent; color: #94a3b8; padding: 8px; }
+.bagian-bawah-modal { margin-top: 20px; text-align: center; color: #64748b; font-size: 12px; }
+.bagian-bawah-modal button { border: 0; background: transparent; color: #1d4ed8; font-weight: 700; }

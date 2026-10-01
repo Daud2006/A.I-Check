@@ -1,0 +1,53 @@
+/* Mengatur ringkasan, filter, daftar riwayat, dan modal detail hasil analisis. */
+.halaman-riwayat { min-height: 70vh; padding: 56px 0; }
+.kepala-halaman-riwayat { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.judul-halaman-riwayat { margin: 16px 0 0; font-size: 32px; letter-spacing: -.04em; }
+.deskripsi-halaman-riwayat { margin: 8px 0 0; color: #64748b; font-size: 14px; }
+.kartu-statistik-riwayat { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 32px; }
+.kartu-statistik { border: 1px solid var(--border); border-radius: 16px; background: #fff; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,.03); }
+.label-statistik { color: #94a3b8; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.nilai-statistik { margin: 12px 0 0; color: #2563eb; font-size: 32px; font-weight: 700; }
+.catatan-statistik { margin: 4px 0 0; color: #64748b; font-size: 12px; }
+.filter-riwayat { display: flex; gap: 12px; margin-top: 24px; border: 1px solid var(--border); border-radius: 16px; background: #fff; padding: 16px; box-shadow: 0 4px 12px rgba(15,23,42,.03); }
+.pencarian-riwayat { position: relative; flex: 1; }
+.pencarian-riwayat .icon { position: absolute; left: 12px; top: 11px; color: #94a3b8; }
+.pencarian-riwayat .form-control { padding-left: 40px; }
+.daftar-riwayat { margin-top: 16px; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: #fff; box-shadow: 0 4px 12px rgba(15,23,42,.03); }
+.baris-riwayat { display: grid; grid-template-columns: 1fr 160px 140px 110px; align-items: center; gap: 16px; padding: 20px; }
+.baris-riwayat + .baris-riwayat { border-top: 1px solid #f1f5f9; }
+.file-riwayat { min-width: 0; display: flex; align-items: center; gap: 16px; }
+.ikon-file-riwayat { width: 48px; height: 48px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 12px; background: #eff6ff; color: #2563eb; }
+.nama-file-riwayat { overflow: hidden; margin: 0; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 700; }
+.tanggal-file-riwayat { margin: 4px 0 0; color: #94a3b8; font-size: 12px; }
+.kepala-skor-riwayat { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+.lajur-skor-riwayat { height: 6px; overflow: hidden; border-radius: 999px; background: #f1f5f9; }
+.isi-skor-riwayat { height: 100%; border-radius: inherit; background: #3b82f6; }
+.aksi-riwayat { display: flex; justify-content: flex-end; gap: 4px; }
+.kosong-riwayat { min-height: 288px; display: grid; place-items: center; padding: 32px; text-align: center; }
+.ikon-riwayat-kosong { width: 56px; height: 56px; display: grid; place-items: center; margin-inline: auto; border-radius: 50%; background: #f1f5f9; color: #94a3b8; }
+.kosong-riwayat h2 { margin: 16px 0 0; font-size: 16px; }
+.kosong-riwayat p { margin: 4px 0 0; color: #94a3b8; font-size: 14px; }
+
+.detail-modal,
+.modal-detail-riwayat { position: fixed; inset: 0; z-index: 60; display: none; place-items: center; padding: 20px; background: rgba(5,42,82,.65); backdrop-filter: blur(8px); }
+.detail-modal[hidden],
+.modal-detail-riwayat[hidden] { display: none !important; }
+.detail-modal.is-open,
+.modal-detail-riwayat.is-open { display: grid; }
+.panel-detail-riwayat { width: min(100%, 512px); border-radius: 24px; background: #fff; padding: 28px; box-shadow: 0 30px 70px rgba(15,23,42,.2); }
+.kepala-detail-riwayat { display: flex; align-items: center; justify-content: space-between; }
+.label-detail-riwayat { color: #2563eb; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.judul-detail-riwayat { max-width: 320px; overflow: hidden; margin: 4px 0 0; text-overflow: ellipsis; white-space: nowrap; font-size: 20px; }
+.skor-detail-riwayat { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+.kotak-skor-detail { border-radius: 12px; background: #eff6ff; padding: 16px; }
+.kotak-skor-detail.netral { background: #f8fafc; }
+.label-skor-detail { color: #64748b; font-size: 12px; }
+.nilai-skor-detail { margin: 4px 0 0; color: #1d4ed8; font-size: 30px; font-weight: 700; }
+.info-detail-riwayat { display: grid; gap: 12px; margin-top: 20px; border: 1px solid var(--border); border-radius: 12px; padding: 16px; font-size: 14px; }
+.baris-info-detail { display: flex; justify-content: space-between; gap: 12px; }
+.baris-info-detail span { color: #64748b; }
+.peringatan-detail-riwayat { display: flex; align-items: flex-start; gap: 12px; margin-top: 20px; border-radius: 12px; background: #fffbeb; padding: 16px; color: #78350f; font-size: 12px; line-height: 1.6; }
+.tombol-simpan-laporan { width: 100%; margin-top: 24px; }
+
+@media (max-width: 900px) { .baris-riwayat { grid-template-columns: 1fr; } .aksi-riwayat { justify-content: flex-start; } }
+@media (max-width: 700px) { .kepala-halaman-riwayat { align-items: flex-start; flex-direction: column; } .kartu-statistik-riwayat { grid-template-columns: 1fr; } .filter-riwayat { flex-direction: column; } }

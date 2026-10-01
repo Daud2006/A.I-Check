@@ -1,0 +1,9 @@
+/* Menata kolom form dan elemen input untuk login, filter, serta form lain yang ada di website. */
+.kolom-formulir { display: block; }
+.label-formulir { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; }
+.form-control { width: 100%; border: 1px solid var(--border); border-radius: 12px; background: #fff; padding: 12px 16px; color: var(--text); font-size: 14px; outline: none; transition: .2s ease; }
+.form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px #eff6ff; }
+.baris-formulir { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cek-formulir { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 12px; }
+.cek-formulir input { accent-color: #2563eb; }
+.tautan-formulir { color: #1d4ed8; font-size: 12px; font-weight: 700; }

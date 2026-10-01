@@ -1,0 +1,3 @@
+/* Navigation-specific helper styles. */
+.mobile-user { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; padding: 12px; border-radius: 12px; background: #eff6ff; }
+.mobile-user-info { display: flex; align-items: center; gap: 12px; }

@@ -1,0 +1,59 @@
+/* Base document rules and design tokens derived from the Figma Make design. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    color: #10243e;
+    background: #f7faff;
+    font-synthesis: none;
+    --blue-950: #052a52;
+    --blue-800: #075fc7;
+    --blue-700: #0866d8;
+    --blue-600: #087ee8;
+    --blue-500: #2497ff;
+    --blue-300: #67c3ff;
+    --blue-100: #e8f4ff;
+    --surface: #ffffff;
+    --background: #f7faff;
+    --text: #10243e;
+    --muted: #64748b;
+    --border: #e2e8f0;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; background: var(--background); color: var(--text); }
+button, input, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+.container { width: min(100% - 40px, 1280px); margin-inline: auto; }
+.page-container { width: min(100% - 40px, 1152px); margin-inline: auto; }
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    border-radius: 999px;
+    background: var(--blue-100);
+    padding: .4rem .75rem;
+    color: var(--blue-600);
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-sm { width: 16px; height: 16px; }
+
+@media (max-width: 700px) {
+    .container, .page-container { width: min(100% - 28px, 1152px); }
+}
+
+@media print {
+    .bagian-header, .bagian-footer, .no-print { display: none !important; }
+    .konten-utama { padding: 0 !important; }
+}
