@@ -9,6 +9,7 @@
 .judul-modal { margin: 24px 0 0; font-size: 24px; }
 .deskripsi-modal { margin: 8px 0 0; color: #64748b; font-size: 14px; line-height: 1.6; }
 .formulir-otorisasi { display: grid; gap: 16px; margin-top: 28px; }
+.formulir-otorisasi[hidden] { display: none !important; }
 .bungkus-sandi { position: relative; }
 .bungkus-sandi .form-control { padding-right: 44px; }
 .tombol-lihat-sandi { position: absolute; right: 8px; top: 8px; display: grid; place-items: center; border: 0; background: transparent; color: #94a3b8; padding: 8px; }
