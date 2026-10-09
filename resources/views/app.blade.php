@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="kerangka-situs">
-        {{-- Navigasi utama. --}}
+        {{-- Header --}}
         <header class="bagian-header">
             <div class="container isi-header">
                 <a href="{{ route('home') }}" class="logo-website" aria-label="A.I Check">
@@ -51,7 +51,7 @@
             <div class="container isi-footer">
                 <div class="logo-website logo-footer"><span class="tanda-logo">@include('icon', ['name' => 'spark'])</span>A.I Check</div>
                 <p>© 2026 A.I Check </p>
-                <span class="daya-footer"><span class="titik-daya"></span>Powered by Hugging Face</span>
+                <span class="daya-footer">
             </div>
         </footer>
     </div>

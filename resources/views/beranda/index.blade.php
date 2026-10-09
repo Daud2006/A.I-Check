@@ -66,7 +66,7 @@
         <div class="container home-stats-grid">
             <div><p class="home-stat-value">10 MB</p><p class="home-stat-label">Ukuran maksimal</p></div>
             <div><p class="home-stat-value">3 format</p><p class="home-stat-label">JPG, PNG &amp; WEBP</p></div>
-            <div><p class="home-stat-value">± 5 detik</p><p class="home-stat-label">Waktu analisis</p></div>
+            <div><p class="home-stat-value">± ? detik</p><p class="home-stat-label">Waktu analisis</p></div>
         </div>
     </section>
 @endsection
