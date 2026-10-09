@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('app')
 
 @section('title', 'A.I Check | Beranda')
 
 @section('content')
-    {{-- Home hero section: visual structure translated from the Figma Make screen. --}}
+    {{-- Bagian utama beranda menampilkan pengenalan dan ajakan untuk memeriksa poster. --}}
     <section class="home-hero">
         <div class="home-hero-grid"></div>
         <div class="home-hero-glow"></div>
@@ -13,13 +13,13 @@
                 <h1 class="home-title">Ketahui poster buatan <span class="home-title-accent">AI</span> dalam hitungan detik.</h1>
                 <p class="home-copy">A.I Check membantu Anda memeriksa keaslian poster melalui analisis visual berbasis model Hugging Face yang cepat dan mudah dipahami.</p>
                 <div class="home-actions">
-                    <a href="{{ route('checker') }}" class="btn btn-light-blue">Periksa Poster Sekarang <x-icon name="arrow" /></a>
+                    <a href="{{ route('checker') }}" class="btn btn-light-blue">Periksa Poster Sekarang @include('icon', ['name' => 'arrow'])</a>
                     <a href="#cara-kerja" class="btn btn-outline">Lihat cara kerja</a>
                 </div>
                 <div class="home-benefits">
-                    <span class="home-benefit"><x-icon name="check" />Tanpa instalasi</span>
-                    <span class="home-benefit"><x-icon name="check" />Privasi terjaga</span>
-                    <span class="home-benefit"><x-icon name="check" />Hasil instan</span>
+                    <span class="home-benefit">@include('icon', ['name' => 'check'])Tanpa instalasi</span>
+                    <span class="home-benefit">@include('icon', ['name' => 'check'])Privasi terjaga</span>
+                    <span class="home-benefit">@include('icon', ['name' => 'check'])Hasil instan</span>
                 </div>
             </div>
 
@@ -55,9 +55,9 @@
                 <p class="section-copy">Tidak perlu keahlian teknis untuk mulai memverifikasi konten visual.</p>
             </div>
             <div class="workflow-grid">
-                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon"><x-icon name="upload" /></span><span class="workflow-number">01</span></div><h3 class="workflow-title">Unggah poster</h3><p class="workflow-copy">Pilih gambar JPG, PNG, atau WEBP dari perangkat Anda.</p></article>
-                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon"><x-icon name="spark" /></span><span class="workflow-number">02</span></div><h3 class="workflow-title">Analisis AI</h3><p class="workflow-copy">Model memeriksa pola piksel dan karakteristik visual secara otomatis.</p></article>
-                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon"><x-icon name="shield" /></span><span class="workflow-number">03</span></div><h3 class="workflow-title">Dapatkan hasil</h3><p class="workflow-copy">Lihat persentase dan indikator visual yang mudah dipahami.</p></article>
+                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'upload'])</span><span class="workflow-number">01</span></div><h3 class="workflow-title">Unggah poster</h3><p class="workflow-copy">Pilih gambar JPG, PNG, atau WEBP dari perangkat Anda.</p></article>
+                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'spark'])</span><span class="workflow-number">02</span></div><h3 class="workflow-title">Analisis AI</h3><p class="workflow-copy">Model memeriksa pola piksel dan karakteristik visual secara otomatis.</p></article>
+                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'shield'])</span><span class="workflow-number">03</span></div><h3 class="workflow-title">Dapatkan hasil</h3><p class="workflow-copy">Lihat persentase dan indikator visual yang mudah dipahami.</p></article>
             </div>
         </div>
     </section>

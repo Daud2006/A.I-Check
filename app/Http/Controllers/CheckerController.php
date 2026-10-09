@@ -7,6 +7,6 @@ class CheckerController extends Controller
     // Render the checker page.
     public function index()
     {
-        return view('checker.index');
+        return view('deteksi.index');
     }
 }

@@ -7,6 +7,6 @@ class ProfileController extends Controller
     // Render the profile page.
     public function index()
     {
-        return view('profile.index');
+        return view('beranda.profil');
     }
 }

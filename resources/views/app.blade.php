@@ -13,7 +13,7 @@
         <header class="bagian-header">
             <div class="container isi-header">
                 <a href="{{ route('home') }}" class="logo-website" aria-label="A.I Check">
-                    <span class="tanda-logo"><x-icon name="spark" /></span>
+                    <span class="tanda-logo">@include('icon', ['name' => 'spark'])</span>
                     <span>A.I <span class="aksen-logo">Check</span></span>
                 </a>
 
@@ -29,7 +29,7 @@
                 </div>
 
                 <button type="button" class="tombol-menu-mobile" id="pembuka-menu-mobile" aria-label="Buka menu" aria-expanded="false">
-                    <x-icon name="menu" />
+                    @include('icon', ['name' => 'menu'])
                 </button>
             </div>
 
@@ -49,7 +49,7 @@
         {{-- Bagian footer menampilkan informasi dasar dan sumber model yang digunakan. --}}
         <footer class="bagian-footer">
             <div class="container isi-footer">
-                <div class="logo-website logo-footer"><span class="tanda-logo"><x-icon name="spark" /></span>A.I Check</div>
+                <div class="logo-website logo-footer"><span class="tanda-logo">@include('icon', ['name' => 'spark'])</span>A.I Check</div>
                 <p>© 2025 A.I Check. Hasil deteksi bersifat estimasi, bukan keputusan mutlak.</p>
                 <span class="daya-footer"><span class="titik-daya"></span>Powered by Hugging Face</span>
             </div>
@@ -60,8 +60,8 @@
     <div class="modal-otorisasi" id="modal-otorisasi" aria-hidden="true">
         <div class="panel-otorisasi" role="dialog" aria-modal="true" aria-labelledby="judul-modal">
             <div class="kepala-modal">
-                <span class="ikon-modal" id="ikon-modal"><x-icon name="lock" /></span>
-                <button type="button" class="tombol-tutup-modal" data-auth-close aria-label="Tutup"><x-icon name="close" /></button>
+                <span class="ikon-modal" id="ikon-modal">@include('icon', ['name' => 'lock'])</span>
+                <button type="button" class="tombol-tutup-modal" data-auth-close aria-label="Tutup">@include('icon', ['name' => 'close'])</button>
             </div>
 
             <h2 class="judul-modal" id="judul-modal">Selamat datang kembali</h2>

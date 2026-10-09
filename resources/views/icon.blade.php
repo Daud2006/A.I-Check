@@ -1,4 +1,4 @@
-{{-- Shared SVG icon component used by the Blade pages. --}}
+{{-- Shared SVG icon partial used by the Blade pages. --}}
 @php
     $paths = [
         'upload' => '<path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/>',
@@ -23,4 +23,4 @@
         'logout' => '<path d="M10 4H5a2 2 0 00-2 2v12a2 2 0 002 2h5"/><path d="M14 16l4-4-4-4m4 4H8"/>',
     ];
 @endphp
-<svg aria-hidden="true" class="icon {{ $class ?? '' }}" viewBox="0 0 24 24"><g>{!! $paths[$name] ?? $paths['spark'] !!}</g></svg>
+<svg aria-hidden="true" class="icon {{ $class ?? '' }}" style="{{ $style ?? '' }}" viewBox="0 0 24 24"><g>{!! $paths[$name] ?? $paths['spark'] !!}</g></svg>
