@@ -3,7 +3,7 @@
 @section('title', 'A.I Check | Beranda')
 
 @section('content')
-    {{-- Bagian utama beranda menampilkan pengenalan dan ajakan untuk memeriksa poster. --}}
+    {{-- Bagian utama beranda. --}}
     <section class="home-hero">
         <div class="home-hero-grid"></div>
         <div class="home-hero-glow"></div>
@@ -46,13 +46,12 @@
         </div>
     </section>
 
-    {{-- Workflow section: three cards from the Figma design. --}}
+    {{-- 3 kotak Cara Kerja. --}}
     <section class="home-workflow" id="cara-kerja">
         <div class="container">
             <div class="section-heading">
                 <span class="eyebrow">Cara kerja</span>
                 <h2 class="section-title">Tiga langkah, hasil yang jelas</h2>
-                <p class="section-copy">Tidak perlu keahlian teknis untuk mulai memverifikasi konten visual.</p>
             </div>
             <div class="workflow-grid">
                 <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'upload'])</span><span class="workflow-number">01</span></div><h3 class="workflow-title">Unggah poster</h3><p class="workflow-copy">Pilih gambar JPG, PNG, atau WEBP dari perangkat Anda.</p></article>
@@ -62,7 +61,7 @@
         </div>
     </section>
 
-    {{-- Statistics strip from the Figma design. --}}
+    {{-- Statistik singkat. --}}
     <section class="home-stats">
         <div class="container home-stats-grid">
             <div><p class="home-stat-value">10 MB</p><p class="home-stat-label">Ukuran maksimal</p></div>

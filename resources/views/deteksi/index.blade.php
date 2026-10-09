@@ -3,7 +3,7 @@
 @section('title', 'A.I Check | Deteksi Poster')
 
 @section('content')
-    {{-- Bagian ini menampilkan judul dan status unggah untuk memulai pemeriksaan gambar. --}}
+    {{-- Unggah gambar untuk diperiksa. --}}
     <section class="halaman-pemeriksaan">
         <div class="container">
             <div class="judul-halaman-pemeriksaan">
@@ -23,7 +23,7 @@
                 </div>
             </div>
 
-            {{-- Bagian hasil menampilkan pratinjau gambar dan ringkasan analisis yang sedang berjalan. --}}
+            {{-- Pratinjau dan hasil pemeriksaan. --}}
             <div id="tampilan-hasil" class="tampilan-hasil" hidden>
                 <div class="kartu-gambar">
                     <div class="area-pratinjau" id="area-pratinjau">

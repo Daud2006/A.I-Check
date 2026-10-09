@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 class CheckerController extends Controller
 {
-    // Render the checker page.
+    // Menampilkan halaman deteksi.
     public function index()
     {
         return view('deteksi.index');

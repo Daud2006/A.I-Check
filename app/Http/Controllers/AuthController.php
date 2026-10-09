@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 class AuthController extends Controller
 {
-    // Render the auth page.
+    // Menampilkan halaman autentikasi.
     public function index()
     {
         return view('autentikasi.index');

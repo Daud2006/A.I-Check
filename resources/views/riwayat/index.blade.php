@@ -3,7 +3,7 @@
 @section('title', 'A.I Check | Riwayat')
 
 @section('content')
-    {{-- Bagian ini menampilkan riwayat, statistik, dan penyaring hasil pemeriksaan. --}}
+    {{-- Daftar riwayat pemeriksaan. --}}
     <section class="halaman-riwayat">
         <div class="container">
             <div class="kepala-halaman-riwayat">

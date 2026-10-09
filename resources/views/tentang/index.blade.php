@@ -3,7 +3,7 @@
 @section('title', 'A.I Check | Tentang')
 
 @section('content')
-    {{-- Halaman tentang menampilkan panel informasi berwarna biru. --}}
+    {{-- Informasi tentang aplikasi. --}}
     <section class="about-page">
         <div class="page-container">
             <div class="about-panel">

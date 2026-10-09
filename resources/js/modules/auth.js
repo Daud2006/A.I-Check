@@ -1,4 +1,4 @@
-// Menangani modal login dan registrasi agar pengguna bisa beralih mode dengan cepat.
+// Modal masuk dan daftar.
 const modalOtorisasi = document.getElementById('modal-otorisasi');
 const formulirMasuk = document.getElementById('formulir-masuk');
 const formulirDaftar = document.getElementById('formulir-daftar');

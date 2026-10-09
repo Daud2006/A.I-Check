@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 class HomeController extends Controller
 {
-    // Render the home page.
+    // Menampilkan halaman beranda.
     public function index()
     {
         return view('beranda.index');

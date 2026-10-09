@@ -1,4 +1,4 @@
-/* Gaya label status, bilah kemajuan, dan indikator probabilitas. */
+/* Status dan kemajuan. */
 .status-pill {
     display: inline-flex;
     width: fit-content;

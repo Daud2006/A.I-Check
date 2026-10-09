@@ -1,4 +1,4 @@
-/* Main JavaScript entry point: shared navigation, authentication, checker, and history modules. */
+/* Titik masuk JavaScript. */
 import './modules/navigation.js';
 import './modules/auth.js';
 import './modules/checker.js';

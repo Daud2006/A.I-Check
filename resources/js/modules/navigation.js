@@ -1,4 +1,4 @@
-// Menangani tombol menu mobile agar navigasi tetap mudah digunakan di layar kecil.
+// Menu seluler.
 const tombolMenuMobile = document.getElementById('pembuka-menu-mobile');
 const menuMobile = document.getElementById('menu-mobile');
 

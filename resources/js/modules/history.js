@@ -1,4 +1,4 @@
-// Mengatur daftar riwayat, filter, statistik, dan modal detail untuk melihat hasil analisis sebelumnya.
+// Daftar dan detail riwayat.
 const daftarRiwayat = document.getElementById('daftar-riwayat');
 if (daftarRiwayat) {
     const contohRiwayat = [

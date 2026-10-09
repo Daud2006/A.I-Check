@@ -1,4 +1,4 @@
-{{-- Shared SVG icon partial used by the Blade pages. --}}
+{{-- Ikon SVG. --}}
 @php
     $paths = [
         'upload' => '<path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/>',

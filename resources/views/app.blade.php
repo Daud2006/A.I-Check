@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="kerangka-situs">
-        {{-- Bagian header digunakan untuk menampilkan navigasi utama yang dapat diakses di seluruh halaman. --}}
+        {{-- Navigasi utama. --}}
         <header class="bagian-header">
             <div class="container isi-header">
                 <a href="{{ route('home') }}" class="logo-website" aria-label="A.I Check">
@@ -46,7 +46,7 @@
             @yield('content')
         </main>
 
-        {{-- Bagian footer menampilkan informasi dasar dan sumber model yang digunakan. --}}
+        {{-- Informasi kaki halaman. --}}
         <footer class="bagian-footer">
             <div class="container isi-footer">
                 <div class="logo-website logo-footer"><span class="tanda-logo">@include('icon', ['name' => 'spark'])</span>A.I Check</div>
@@ -56,7 +56,7 @@
         </footer>
     </div>
 
-    {{-- Modal otorisasi berfungsi untuk login dan pendaftaran pengguna dengan satu tampilan reusable. --}}
+    {{-- Modal masuk dan daftar. --}}
     <div class="modal-otorisasi" id="modal-otorisasi" aria-hidden="true">
         <div class="panel-otorisasi" role="dialog" aria-modal="true" aria-labelledby="judul-modal">
             <div class="kepala-modal">

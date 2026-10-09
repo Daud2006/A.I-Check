@@ -1,4 +1,4 @@
-// Mengatur alur upload, pratinjau gambar, progres analisis, dan hasil akhir yang ditampilkan pengguna.
+// Unggah dan hasil deteksi.
 const inputGambar = document.getElementById('input-gambar');
 const tombolPilihGambar = document.getElementById('tombol-pilih-gambar');
 const areaDropGambar = document.getElementById('area-drop-gambar');

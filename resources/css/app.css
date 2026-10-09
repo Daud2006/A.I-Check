@@ -1,4 +1,4 @@
-/* Gaya utama: mengimpor gaya dasar, komponen, dan halaman. */
+/* Gaya utama. */
 @import "./dasar.css";
 @import "./tata-letak.css";
 @import "./komponen/tombol.css";

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 class HistoryController extends Controller
 {
-    // Render the history page.
+    // Menampilkan halaman riwayat.
     public function index()
     {
         return view('riwayat.index');

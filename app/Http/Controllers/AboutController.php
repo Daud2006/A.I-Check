@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 class AboutController extends Controller
 {
-    // Render the about page.
+    // Menampilkan halaman tentang.
     public function index()
     {
         return view('tentang.index');
