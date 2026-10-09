@@ -46,11 +46,11 @@
             @yield('content')
         </main>
 
-        {{-- Informasi kaki halaman. --}}
+        {{-- Footer --}}
         <footer class="bagian-footer">
             <div class="container isi-footer">
                 <div class="logo-website logo-footer"><span class="tanda-logo">@include('icon', ['name' => 'spark'])</span>A.I Check</div>
-                <p>© 2025 A.I Check. Hasil deteksi bersifat estimasi, bukan keputusan mutlak.</p>
+                <p>© 2026 A.I Check </p>
                 <span class="daya-footer"><span class="titik-daya"></span>Powered by Hugging Face</span>
             </div>
         </footer>
