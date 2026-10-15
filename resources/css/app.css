@@ -12,3 +12,253 @@
 @import "./halaman/profil.css";
 @import "./halaman/tentang.css";
 @import "./halaman/admin.css";
+
+/* ================================
+   TOMBOL SUBSCRIBE
+================================ */
+
+.btn-subscribe {
+    background: #eff6ff;
+    color: #075fc7;
+    border: 1px solid #bfdbfe;
+}
+
+.btn-subscribe:hover {
+    background: #dbeafe;
+    color: #075fc7;
+}
+
+.subscribe-mobile {
+    color: #075fc7;
+    font-weight: 700;
+}
+
+/* ================================
+   MODAL SUBSCRIBE
+================================ */
+
+.modal-subscribe {
+    position: fixed;
+    inset: 0;
+    z-index: 65;
+    display: none;
+    place-items: center;
+    padding: 20px;
+    background: rgba(5, 42, 82, 0.65);
+    backdrop-filter: blur(8px);
+    overflow-y: auto;
+}
+
+.modal-subscribe.is-open {
+    display: grid;
+}
+
+.panel-subscribe {
+    width: min(100%, 760px);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    border-radius: 24px;
+    background: #fff;
+    color: #0f172a;
+    padding: 30px;
+    box-shadow: 0 30px 70px rgba(15, 23, 42, 0.2);
+}
+
+.subscribe-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.subscribe-eyebrow {
+    color: #0866d8;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+}
+
+#judul-subscribe {
+    margin: 12px 0 0;
+    font-size: 25px;
+    line-height: 1.3;
+}
+
+.subscribe-description {
+    margin: 8px 0 0;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.subscribe-close {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.subscribe-close:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+/* Pilihan bulanan dan tahunan */
+
+.subscribe-period {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 24px auto;
+    padding: 5px;
+    border-radius: 12px;
+    background: #f1f5f9;
+}
+
+.subscribe-period-button {
+    border: 0;
+    border-radius: 9px;
+    padding: 10px 13px;
+    background: transparent;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.subscribe-period-button.is-active {
+    background: #fff;
+    color: #075fc7;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.subscribe-period-button span {
+    display: inline-block;
+    margin-left: 4px;
+    border-radius: 5px;
+    padding: 3px 5px;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 10px;
+}
+
+/* Kartu paket */
+
+.subscribe-plan-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.subscribe-plan {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 22px;
+    background: #fff;
+}
+
+.subscribe-plan-premium {
+    border-color: #60a5fa;
+    background: linear-gradient(180deg, #eff6ff 0%, #fff 45%);
+    box-shadow: 0 8px 24px rgba(8, 102, 216, 0.08);
+}
+
+.subscribe-plan-label {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.subscribe-plan h3 {
+    margin: 12px 0 0;
+    font-size: 23px;
+}
+
+.subscribe-price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 12px;
+}
+
+.subscribe-price strong {
+    color: #0f172a;
+    font-size: 29px;
+    letter-spacing: -0.04em;
+}
+
+.subscribe-price span {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.subscribe-plan-description {
+    min-height: 42px;
+    margin: 12px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.subscribe-list {
+    display: grid;
+    gap: 10px;
+    margin: 18px 0 22px;
+    padding-left: 19px;
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.subscribe-plan-button {
+    width: 100%;
+    margin-top: auto;
+    cursor: pointer;
+}
+
+.subscribe-note {
+    margin: 20px 0 0;
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* Tampilan HP */
+
+@media (max-width: 560px) {
+    .panel-subscribe {
+        padding: 22px 18px;
+    }
+
+    #judul-subscribe {
+        font-size: 21px;
+    }
+
+    .subscribe-plan-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .subscribe-plan {
+        padding: 20px;
+    }
+
+    .subscribe-plan-description {
+        min-height: auto;
+    }
+}
