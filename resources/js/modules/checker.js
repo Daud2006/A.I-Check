@@ -19,6 +19,71 @@ const hasilAnalisis = document.getElementById('hasil-analisis');
 let fileTerpilih = null;
 let urlPratinjau = '';
 
+// Membuat gambar pratinjau kecil untuk disimpan dalam riwayat.
+const buatPratinjauRiwayat = (file) => new Promise((resolve) => {
+    if (!file) {
+        resolve('');
+        return;
+    }
+
+    const urlSementara = URL.createObjectURL(file);
+    const gambar = new Image();
+
+    gambar.onload = () => {
+        try {
+            const batasSisi = 640;
+            const skala = Math.min(
+                1,
+                batasSisi / Math.max(
+                    gambar.naturalWidth,
+                    gambar.naturalHeight
+                )
+            );
+
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(
+                1,
+                Math.round(gambar.naturalWidth * skala)
+            );
+            canvas.height = Math.max(
+                1,
+                Math.round(gambar.naturalHeight * skala)
+            );
+
+            const konteks = canvas.getContext('2d');
+
+            if (!konteks) {
+                URL.revokeObjectURL(urlSementara);
+                resolve('');
+                return;
+            }
+
+            konteks.drawImage(
+                gambar,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+            const hasil = canvas.toDataURL('image/jpeg', 0.65);
+
+            URL.revokeObjectURL(urlSementara);
+            resolve(hasil);
+        } catch (error) {
+            URL.revokeObjectURL(urlSementara);
+            resolve('');
+        }
+    };
+
+    gambar.onerror = () => {
+        URL.revokeObjectURL(urlSementara);
+        resolve('');
+    };
+
+    gambar.src = urlSementara;
+});
+
 const elemenMarker = areaPratinjau ? [...areaPratinjau.querySelectorAll('.titik-marker')] : [];
 
 const aturTampilanUpload = (terlihat) => {
@@ -91,12 +156,21 @@ const simpanRiwayat = (item) => {
     localStorage.setItem('verifai-history', JSON.stringify([item, ...riwayatSaatIni]));
 };
 
-const tampilkanHasilAnalisis = (skor) => {
+const tampilkanHasilAnalisis = async (skor) => {
     const skorManusia = 100 - skor;
     const label = klasifikasiHasil(skor);
     const warna = warnaStatus(skor);
     const id = Date.now();
-    const item = { id, name: fileTerpilih.name, date: 'Baru saja', aiScore: skor, humanScore: skorManusia, label };
+    const gambarRiwayat = await buatPratinjauRiwayat(fileTerpilih);
+    const item = {
+        id,
+        name: fileTerpilih.name,
+        date: 'Baru saja',
+        aiScore: skor,
+        humanScore: skorManusia,
+        label,
+        imageData: gambarRiwayat
+    };
     hasilAnalisis.innerHTML = `
         <div class="kepala-hasil"><span class="eyebrow"><svg aria-hidden="true" class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg>Analisis selesai</span><span class="id-hasil">ID #${String(id).slice(-6)}</span></div>
         <div class="konten-hasil">
@@ -146,7 +220,7 @@ tombolAnalisis?.addEventListener('click', async () => {
         }
         window.clearInterval(timer);
         aturProgres(100);
-        tampilkanHasilAnalisis(skor);
+        await tampilkanHasilAnalisis(skor);
     } catch (error) {
         window.clearInterval(timer);
         aturProgres(0);

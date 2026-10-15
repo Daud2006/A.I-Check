@@ -188,13 +188,18 @@
 .modal-detail-riwayat.is-open {
     display: grid;
 }
+
 .panel-detail-riwayat {
-    width: min(100%, 512px);
+    width: min(100%, 600px);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    box-sizing: border-box;
     border-radius: 24px;
     background: #fff;
     padding: 28px;
     box-shadow: 0 30px 70px rgba(15, 23, 42, 0.2);
 }
+
 .kepala-detail-riwayat {
     display: flex;
     align-items: center;
@@ -268,9 +273,16 @@
     font-size: 12px;
     line-height: 1.6;
 }
+
 .tombol-simpan-laporan {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     width: 100%;
+    min-height: 48px;
     margin-top: 24px;
+    cursor: pointer;
 }
 
 @media (max-width: 900px) {
@@ -291,5 +303,131 @@
     }
     .filter-riwayat {
         flex-direction: column;
+    }
+}
+
+/* =====================================
+   GAMBAR DETAIL RIWAYAT
+===================================== */
+
+.gambar-detail-wrapper {
+    margin-top: 20px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+.gambar-detail-riwayat {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 480px;
+    margin: 0 auto;
+    object-fit: contain;
+    background: #f8fafc;
+}
+
+.gambar-detail-riwayat[hidden],
+.pesan-gambar-detail-riwayat[hidden] {
+    display: none !important;
+}
+
+.pesan-gambar-detail-riwayat {
+    margin: 0;
+    padding: 16px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* =====================================
+   CETAK DETAIL SEBAGAI LAPORAN
+===================================== */
+
+@media print {
+    @page {
+        margin: 15mm;
+    }
+
+    /* Sembunyikan halaman lain di luar detail laporan. */
+    body.cetak-laporan-riwayat * {
+        visibility: hidden !important;
+    }
+
+    /* Tampilkan modal detail yang sedang dibuka. */
+    body.cetak-laporan-riwayat #modal-detail-riwayat,
+    body.cetak-laporan-riwayat #modal-detail-riwayat * {
+        visibility: visible !important;
+    }
+
+    body.cetak-laporan-riwayat #modal-detail-riwayat {
+        display: block !important;
+        position: absolute !important;
+        inset: 0 auto auto 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: #fff !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+    }
+
+    /* Hilangkan kotak dan bayangan pop-up. */
+    body.cetak-laporan-riwayat #modal-detail-riwayat .panel-detail-riwayat {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+
+    /* Tombol X dan Simpan laporan tidak ikut dicetak. */
+    body.cetak-laporan-riwayat #tombol-tutup-detail,
+    body.cetak-laporan-riwayat #tombol-simpan-laporan {
+        display: none !important;
+    }
+
+    /* Gambar ditampilkan dengan ukuran yang wajar. */
+    body.cetak-laporan-riwayat .gambar-detail-wrapper {
+        margin: 18px 0;
+        border: 1px solid #ddd;
+        border-radius: 0;
+        background: #fff !important;
+        break-inside: avoid;
+    }
+
+    body.cetak-laporan-riwayat .gambar-detail-riwayat {
+        display: block !important;
+        width: auto !important;
+        max-width: 100% !important;
+        max-height: 110mm !important;
+        margin: 0 auto;
+        object-fit: contain;
+        background: #fff !important;
+    }
+
+    body.cetak-laporan-riwayat .skor-detail-riwayat,
+    body.cetak-laporan-riwayat .info-detail-riwayat {
+        break-inside: avoid;
+    }
+
+    body.cetak-laporan-riwayat .peringatan-detail-riwayat {
+        background: #fff !important;
+        color: #333 !important;
+        border: 1px solid #ddd;
+        break-inside: avoid;
+    }
+
+    body.cetak-laporan-riwayat {
+        background: #fff !important;
     }
 }
