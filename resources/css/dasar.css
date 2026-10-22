@@ -1,23 +1,43 @@
-/* Gaya dasar. */
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
-
+/* Gaya dasar dan token desain. */
 :root {
-    font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    font-family: "DM Sans", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
     color: #10243e;
     background: #f7faff;
     font-synthesis: none;
+    text-rendering: optimizeLegibility;
     --blue-950: #052a52;
+    --blue-900: #073b70;
     --blue-800: #075fc7;
     --blue-700: #0866d8;
     --blue-600: #087ee8;
     --blue-500: #2497ff;
     --blue-300: #67c3ff;
     --blue-100: #e8f4ff;
+    --green-700: #15803d;
+    --green-100: #dcfce7;
+    --amber-800: #92400e;
+    --amber-100: #fef3c7;
+    --red-700: #b91c1c;
+    --red-100: #fee2e2;
+    --slate-900: #10243e;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
     --surface: #ffffff;
     --background: #f7faff;
-    --text: #10243e;
-    --muted: #64748b;
-    --border: #e2e8f0;
+    --text: var(--slate-900);
+    --muted: var(--slate-500);
+    --border: var(--slate-200);
+    --radius-sm: 0.625rem;
+    --radius-md: 0.875rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 1.75rem;
+    --shadow-card: 0 8px 28px rgba(15, 35, 60, 0.06);
+    --shadow-focus: 0 0 0 3px rgba(8, 102, 216, 0.2);
+    --space-section: clamp(3rem, 7vw, 5.5rem);
 }
 
 * {
@@ -25,6 +45,7 @@
 }
 html {
     scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
 }
 body {
     margin: 0;
@@ -51,6 +72,16 @@ a {
 img {
     max-width: 100%;
     display: block;
+}
+
+:focus-visible {
+    outline: 3px solid var(--blue-600);
+    outline-offset: 3px;
+}
+
+::selection {
+    background: #bfdbfe;
+    color: var(--blue-950);
 }
 
 .container {
@@ -105,5 +136,16 @@ img {
     }
     .konten-utama {
         padding: 0 !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }

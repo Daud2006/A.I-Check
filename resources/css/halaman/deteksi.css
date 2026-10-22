@@ -11,7 +11,7 @@
 }
 .judul-pemeriksaan {
     margin: 16px 0 0;
-    font-size: 40px;
+    font-size: clamp(2rem, 4vw, 2.5rem);
     letter-spacing: -0.04em;
 }
 .deskripsi-pemeriksaan {
@@ -21,14 +21,28 @@
     font-size: 14px;
     line-height: 1.7;
 }
+.pesan-checker {
+    max-width: 960px;
+    margin: 0 auto 20px;
+    border-radius: 12px;
+    background: #eff6ff;
+    padding: 14px 18px;
+    color: #1e3a8a;
+    font-size: 14px;
+}
+.pesan-checker.is-error {
+    background: #fef2f2;
+    color: #991b1b;
+}
 .kotak-upload {
     max-width: 960px;
     margin-inline: auto;
     border: 2px dashed #cbd5e1;
-    border-radius: 28px;
+    border-radius: var(--radius-xl);
     background: #fff;
     padding: 48px;
-    transition: 0.2s ease;
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 .kotak-upload:hover,
 .kotak-upload.is-dragging {
@@ -40,13 +54,13 @@
     display: none !important;
 }
 .area-upload {
-    min-height: 360px;
+    min-height: clamp(260px, 35vw, 360px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     border-radius: 18px;
-    background: radial-gradient(circle at center, #e8f4ff, transparent 68%);
+    background: radial-gradient(circle at center, #e8f4ff 0%, #fff 72%);
     text-align: center;
 }
 .ikon-upload {
@@ -159,6 +173,8 @@
 .panel-hasil {
     min-height: 480px;
     padding: 32px;
+    display: flex;
+    flex-direction: column;
 }
 .ikon-panel {
     width: 48px;
@@ -209,6 +225,28 @@
 .kemajuan-analisis {
     margin-top: auto;
     padding-top: 32px;
+}
+.checker-message-success,
+.checker-message-error {
+    margin: 0;
+    border-radius: 12px;
+    padding: 16px;
+    line-height: 1.6;
+}
+.checker-message-error:focus-visible,
+.checker-message-success:focus-visible {
+    outline-offset: 2px;
+}
+.checker-message-success {
+    background: #eff6ff;
+    color: #1e3a8a;
+}
+.checker-message-error {
+    background: #fef2f2;
+    color: #991b1b;
+}
+#hasil-analisis .btn {
+    margin-top: 16px;
 }
 .kepala-kemajuan {
     display: flex;
@@ -329,10 +367,17 @@
         font-size: 32px;
     }
     .kotak-upload {
-        padding: 24px;
+        padding: 16px;
     }
     .panel-hasil {
-        padding: 24px;
+        min-height: auto;
+        padding: 20px;
+    }
+
+    @media (max-width: 380px) {
+        .area-pratinjau {
+            min-height: 280px;
+        }
     }
     .konten-hasil {
         align-items: flex-start;

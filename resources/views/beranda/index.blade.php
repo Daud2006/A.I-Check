@@ -9,17 +9,16 @@
         <div class="home-hero-glow"></div>
         <div class="container home-hero-inner">
             <div>
-                <span class="home-kicker"><span class="home-kicker-dot"></span>Teknologi deteksi generasi terbaru</span>
-                <h1 class="home-title">Ketahui poster buatan <span class="home-title-accent">AI</span> dalam hitungan detik.</h1>
-                <p class="home-copy">A.I Check membantu Anda memeriksa keaslian poster melalui analisis visual berbasis model Hugging Face yang cepat dan mudah dipahami.</p>
+                <span class="home-kicker"><span class="home-kicker-dot" aria-hidden="true"></span>Analisis gambar secara lokal</span>
+                <h1 class="home-title">Pahami asal visual poster dengan <span class="home-title-accent">A.I-Check</span>.</h1>
+                <p class="home-copy">Unggah poster untuk mendapatkan prediksi kelas dari model AI lokal. Hasil membantu peninjauan, bukan bukti pasti tentang asal gambar.</p>
                 <div class="home-actions">
-                    <a href="{{ route('checker') }}" class="btn btn-light-blue">Periksa Poster Sekarang @include('icon', ['name' => 'arrow'])</a>
+                    <a href="{{ route('checker') }}" class="btn btn-light-blue">Mulai pemeriksaan @include('icon', ['name' => 'arrow'])</a>
                     <a href="#cara-kerja" class="btn btn-outline">Lihat cara kerja</a>
                 </div>
-                <div class="home-benefits">
-                    <span class="home-benefit">@include('icon', ['name' => 'check'])Tanpa instalasi</span>
-                    <span class="home-benefit">@include('icon', ['name' => 'check'])Privasi terjaga</span>
-                    <span class="home-benefit">@include('icon', ['name' => 'check'])Hasil instan</span>
+                <div class="home-benefits" aria-label="Informasi layanan">
+                    <span class="home-benefit">@include('icon', ['name' => 'shield'])Gambar tersimpan privat</span>
+                    <span class="home-benefit">@include('icon', ['name' => 'layers'])Model berjalan lokal</span>
                 </div>
             </div>
 
@@ -36,9 +35,13 @@
                             <div class="scan-poster-copy"><strong>FUTURE<br>NATURE</strong><span>Design conference 2025</span></div>
                             <div class="scan-line"></div>
                         </div>
-                        <div class="scan-score">
-                            <div><div class="scan-score-label">Probabilitas buatan AI</div><div class="scan-score-value">87.4%</div></div>
-                            <div class="scan-score-ring"><span class="scan-score-ring-inner">AI</span></div>
+                        <div class="scan-score" aria-label="Ilustrasi antarmuka, bukan hasil prediksi">
+                            <div>
+                                <div class="scan-score-label">Contoh tampilan hasil</div>
+                                <div class="scan-score-value">Prediksi model</div>
+                                <p class="scan-score-note">Nilai ditampilkan setelah gambar dianalisis.</p>
+                            </div>
+                            <div class="scan-score-ring" aria-hidden="true"><span class="scan-score-ring-inner">@include('icon', ['name' => 'spark'])</span></div>
                         </div>
                     </div>
                 </div>
@@ -46,27 +49,26 @@
         </div>
     </section>
 
-    {{-- 3 kotak Cara Kerja. --}}
     <section class="home-workflow" id="cara-kerja">
         <div class="container">
             <div class="section-heading">
                 <span class="eyebrow">Cara kerja</span>
-                <h2 class="section-title">Tiga langkah, hasil yang jelas</h2>
+                <h2 class="section-title">Pemeriksaan yang sederhana dan transparan</h2>
+                <p class="section-copy">Anda tetap memegang kendali atas gambar dan dapat meninjau kembali analisis dari akun Anda.</p>
             </div>
             <div class="workflow-grid">
-                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'upload'])</span><span class="workflow-number">01</span></div><h3 class="workflow-title">Unggah poster</h3><p class="workflow-copy">Pilih gambar JPG, PNG, atau WEBP dari perangkat Anda.</p></article>
-                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'spark'])</span><span class="workflow-number">02</span></div><h3 class="workflow-title">Analisis AI</h3><p class="workflow-copy">Model memeriksa pola piksel dan karakteristik visual secara otomatis.</p></article>
-                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'shield'])</span><span class="workflow-number">03</span></div><h3 class="workflow-title">Dapatkan hasil</h3><p class="workflow-copy">Lihat persentase dan indikator visual yang mudah dipahami.</p></article>
+                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'upload'])</span><span class="workflow-number">01</span></div><h3 class="workflow-title">Pilih gambar</h3><p class="workflow-copy">Unggah gambar JPEG, PNG, atau WebP hingga 10 MB.</p></article>
+                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'spark'])</span><span class="workflow-number">02</span></div><h3 class="workflow-title">Jalankan analisis</h3><p class="workflow-copy">Model lokal memproses gambar yang disimpan pada penyimpanan privat aplikasi.</p></article>
+                <article class="workflow-card"><div class="workflow-card-top"><span class="workflow-icon">@include('icon', ['name' => 'shield'])</span><span class="workflow-number">03</span></div><h3 class="workflow-title">Tinjau prediksi</h3><p class="workflow-copy">Lihat kelas yang diprediksi dan skor kelas tersebut. Model tetap dapat keliru.</p></article>
             </div>
         </div>
     </section>
 
-    {{-- Statistik singkat. --}}
-    <section class="home-stats">
+    <section class="home-stats" aria-label="Batas dan privasi pemeriksaan">
         <div class="container home-stats-grid">
-            <div><p class="home-stat-value">10 MB</p><p class="home-stat-label">Ukuran maksimal</p></div>
-            <div><p class="home-stat-value">3 format</p><p class="home-stat-label">JPG, PNG &amp; WEBP</p></div>
-            <div><p class="home-stat-value">± ? detik</p><p class="home-stat-label">Waktu analisis</p></div>
+            <div><p class="home-stat-value">10 MB</p><p class="home-stat-label">Ukuran unggahan maksimal</p></div>
+            <div><p class="home-stat-value">JPEG · PNG · WebP</p><p class="home-stat-label">Format yang didukung</p></div>
+            <div><p class="home-stat-value">Lokal</p><p class="home-stat-label">Pemrosesan model</p></div>
         </div>
     </section>
 @endsection

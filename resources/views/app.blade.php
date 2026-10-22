@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="A.I Check - pemeriksaan visual gambar berbasis AI.">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'A.I Check')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -33,38 +34,57 @@
                 <div class="aksi-header">
                     @if (request()->routeIs('home'))
                     <button type="button" class="btn btn-subscribe" data-subscribe-open>
-                        Subscribe
+                        Subscriptions
                     </button>
                     @endif
 
+                    @auth
+                    <a href="{{ route('profile') }}" class="btn btn-secondary">{{ auth()->user()->name }}</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-primary">Keluar</button>
+                    </form>
+                    @else
                     <button type="button" class="btn btn-primary" data-auth-open="login">
                         Masuk
                     </button>
+                    @endauth
                 </div>
 
                 <button type="button" class="tombol-menu-mobile" id="pembuka-menu-mobile" aria-label="Buka menu"
-                    aria-expanded="false">
+                    aria-expanded="false" aria-controls="menu-mobile">
                     @include('icon', ['name' => 'menu'])
                 </button>
             </div>
 
             <div class="menu-mobile" id="menu-mobile">
-                <a href="{{ route('home') }}" class="tautan-menu-mobile">Beranda</a>
-                <a href="{{ route('checker') }}" class="tautan-menu-mobile">Deteksi Poster</a>
-                <a href="{{ route('history') }}" class="tautan-menu-mobile">Riwayat</a>
-                <a href="{{ route('about') }}" class="tautan-menu-mobile">Tentang</a>
+                <a href="{{ route('home') }}" class="tautan-menu-mobile {{ request()->routeIs('home') ? 'is-active' : '' }}" @if (request()->routeIs('home')) aria-current="page" @endif>Beranda</a>
+                <a href="{{ route('checker') }}" class="tautan-menu-mobile {{ request()->routeIs('checker') ? 'is-active' : '' }}" @if (request()->routeIs('checker')) aria-current="page" @endif>Deteksi Poster</a>
+                <a href="{{ route('history') }}" class="tautan-menu-mobile {{ request()->routeIs('history') ? 'is-active' : '' }}" @if (request()->routeIs('history')) aria-current="page" @endif>Riwayat</a>
+                <a href="{{ route('about') }}" class="tautan-menu-mobile {{ request()->routeIs('about') ? 'is-active' : '' }}" @if (request()->routeIs('about')) aria-current="page" @endif>Tentang</a>
 
                 @if (request()->routeIs('home'))
                 <button type="button" class="tautan-menu-mobile subscribe-mobile" data-subscribe-open>
-                    Subscribe
+                    Subscriptions
                 </button>
                 @endif
 
+                @auth
+                <a href="{{ route('profile') }}" class="btn btn-secondary btn-full">Profil</a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-primary btn-full">Keluar</button>
+                </form>
+                @else
                 <button type="button" class="btn btn-primary btn-full" data-auth-open="login">Masuk</button>
+                @endauth
             </div>
         </header>
 
         <main class="konten-utama">
+            @if (session('status') && !request()->routeIs('profile'))
+                <p role="status" aria-live="polite">{{ session('status') }}</p>
+            @endif
             @yield('content')
         </main>
 
@@ -73,14 +93,16 @@
             <div class="container isi-footer">
                 <div class="logo-website logo-footer"><span class="tanda-logo">@include('icon', ['name' =>
                         'spark'])</span>A.I Check</div>
-                <p>© 2026 A.I Check </p>
-                <span class="daya-footer">
+                <p>© 2026 A.I Check</p>
+                <span class="daya-footer"><span class="titik-daya" aria-hidden="true"></span>Model AI lokal</span>
             </div>
         </footer>
     </div>
 
     {{-- Modal masuk dan daftar. --}}
-    <div class="modal-otorisasi" id="modal-otorisasi" aria-hidden="true">
+    <div class="modal-otorisasi" id="modal-otorisasi" aria-hidden="true"
+        data-auth-initial-mode="{{ session('auth_mode', 'login') }}"
+        data-auth-open-on-load="{{ session()->has('auth_mode') && $errors->any() ? 'true' : 'false' }}">
         <div class="panel-otorisasi" role="dialog" aria-modal="true" aria-labelledby="judul-modal">
             <div class="kepala-modal">
                 <span class="ikon-modal" id="ikon-modal">@include('icon', ['name' => 'lock'])</span>
@@ -92,34 +114,47 @@
             <p class="deskripsi-modal" id="deskripsi-modal">Masuk untuk menyimpan dan menyinkronkan riwayat analisis.
             </p>
 
-            <form class="formulir-otorisasi" id="formulir-masuk">
+            <form class="formulir-otorisasi" id="formulir-masuk" method="POST" action="{{ route('login') }}">
+                @csrf
+                @if (session()->has('auth_mode') && $errors->any() && session('auth_mode') === 'login')
+                    <div class="alert-error" role="alert">{{ $errors->first() }}</div>
+                @endif
                 <label class="kolom-formulir">
                     <span class="label-formulir">Email</span>
-                    <input class="form-control" type="email" name="email" required placeholder="nama@email.com">
+                    <input class="form-control" type="email" name="email" value="{{ old('email') }}" required
+                        autocomplete="email" placeholder="nama@email.com">
                 </label>
                 <label class="kolom-formulir">
                     <span class="label-formulir">Kata sandi</span>
-                    <input class="form-control" type="password" name="password" required minlength="8"
+                    <input class="form-control" type="password" name="password" required autocomplete="current-password"
                         placeholder="Minimal 8 karakter">
                 </label>
                 <div class="baris-formulir">
-                    <label class="cek-formulir"><input type="checkbox" checked> Ingat saya</label>
+                    <label class="cek-formulir"><input type="checkbox" name="remember" value="1"> Ingat saya</label>
                     <button type="button" class="tautan-formulir" style="border:0;background:none;">Lupa kata
                         sandi?</button>
                 </div>
                 <button class="btn btn-primary btn-full" type="submit">Masuk</button>
             </form>
 
-            <form class="formulir-otorisasi" id="formulir-daftar" hidden>
+            <form class="formulir-otorisasi" id="formulir-daftar" method="POST" action="{{ route('register') }}" hidden>
+                @csrf
+                @if (session()->has('auth_mode') && $errors->any() && session('auth_mode') === 'register')
+                    <div class="alert-error" role="alert">{{ $errors->first() }}</div>
+                @endif
                 <label class="kolom-formulir"><span class="label-formulir">Nama lengkap</span><input
-                        class="form-control" type="text" name="name" required minlength="3"
+                        class="form-control" type="text" name="name" value="{{ old('name') }}" required minlength="3"
+                        autocomplete="name"
                         placeholder="Masukkan nama lengkap"></label>
                 <label class="kolom-formulir"><span class="label-formulir">Alamat email</span><input
-                        class="form-control" type="email" name="email" required placeholder="nama@email.com"></label>
+                        class="form-control" type="email" name="email" value="{{ old('email') }}" required
+                        autocomplete="email" placeholder="nama@email.com"></label>
                 <label class="kolom-formulir"><span class="label-formulir">Kata sandi</span><input class="form-control"
-                        type="password" name="password" required minlength="8" placeholder="Minimal 8 karakter"></label>
+                        type="password" name="password" required minlength="8" autocomplete="new-password"
+                        placeholder="Minimal 8 karakter"></label>
                 <label class="kolom-formulir"><span class="label-formulir">Konfirmasi kata sandi</span><input
-                        class="form-control" type="password" name="confirmPassword" required minlength="8"
+                        class="form-control" type="password" name="password_confirmation" required minlength="8"
+                        autocomplete="new-password"
                         placeholder="Ulangi kata sandi"></label>
                 <label class="cek-formulir"><input type="checkbox" required> Saya menyetujui Syarat Penggunaan dan
                     Kebijakan Privasi A.I Check.</label>

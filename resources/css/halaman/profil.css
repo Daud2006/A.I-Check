@@ -1,16 +1,18 @@
 /* Gaya profil. */
 .profile-page {
     min-height: 70vh;
-    padding: 56px 0;
+    display: grid;
+    align-items: center;
+    padding: var(--space-section) 0;
 }
 .profile-card {
     max-width: 720px;
     margin: 0 auto;
     border: 1px solid var(--border);
-    border-radius: 24px;
+    border-radius: var(--radius-xl);
     background: #fff;
-    padding: 32px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    padding: clamp(24px, 5vw, 36px);
+    box-shadow: var(--shadow-card);
 }
 .profile-head {
     display: flex;
@@ -23,19 +25,58 @@
     display: grid;
     place-items: center;
     border-radius: 16px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    background: var(--blue-700);
     color: #fff;
     font-size: 20px;
     font-weight: 700;
 }
 .profile-title {
     margin: 0;
-    font-size: 24px;
+    font-size: clamp(1.5rem, 4vw, 1.75rem);
+    letter-spacing: -0.035em;
 }
 .profile-copy {
     margin: 4px 0 0;
-    color: #64748b;
+    color: var(--muted);
     font-size: 14px;
+    line-height: 1.65;
+}
+.profile-notice {
+    margin: 24px 0 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+.profile-notice-success {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #166534;
+}
+.profile-notice-error {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+}
+.profile-notice-error p {
+    margin: 0;
+}
+.profile-notice-error p + p {
+    margin-top: 6px;
+}
+.profile-form .btn {
+    justify-self: start;
+}
+
+@media (max-width: 480px) {
+    .profile-head {
+        align-items: flex-start;
+    }
+
+    .profile-form .btn {
+        width: 100%;
+    }
 }
 .profile-form {
     display: grid;

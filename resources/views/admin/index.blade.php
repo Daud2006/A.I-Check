@@ -3,28 +3,15 @@
 @section('title', 'A.I Check | Admin')
 
 @section('content')
-    {{-- Masih Belum Dibuat --}}
     <section class="admin-page">
-        <div class="container">
-            <div class="admin-heading">
-                <span class="eyebrow">Dashboard</span>
-                <h1 class="admin-title">Ringkasan sistem</h1>
-            </div>
-            <div class="admin-grid">
-                <div class="admin-card">
-                    <div class="admin-card-label">Pengguna</div>
-                    <div class="admin-card-value">1,248</div>
-                    <div class="admin-card-note">Akun terdaftar</div>
-                </div>
-                <div class="admin-card">
-                    <div class="admin-card-label">Pemeriksaan</div>
-                    <div class="admin-card-value">3,562</div>
-                    <div class="admin-card-note">Total analisis</div>
-                </div>
-                <div class="admin-card">
-                    <div class="admin-card-label">AI terdeteksi</div>
-                    <div class="admin-card-value">1,842</div>
-                    <div class="admin-card-note">Skor di atas 75%</div>
+        <div class="page-container">
+            <div class="admin-panel">
+                <span class="eyebrow">@include('icon', ['name' => 'lock', 'class' => 'icon-sm'])Area administrator</span>
+                <h1 class="admin-title">Panel admin</h1>
+                <p class="admin-description">Halaman ini hanya tersedia untuk akun administrator. Fitur pengelolaan belum tersedia pada versi saat ini.</p>
+                <div class="admin-status" role="status">
+                    @include('icon', ['name' => 'info', 'class' => 'icon-sm'])
+                    Belum ada alat administrasi yang aktif.
                 </div>
             </div>
         </div>

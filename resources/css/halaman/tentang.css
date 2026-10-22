@@ -5,9 +5,14 @@
 }
 .about-panel {
     border-radius: 28px;
-    background: #075fc7;
-    padding: 56px;
+    background: var(--blue-800);
+    padding: clamp(28px, 6vw, 56px);
     color: #fff;
+}
+.about-eyebrow {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #e0f2fe;
 }
 .about-title {
     max-width: 720px;
@@ -19,7 +24,7 @@
 .about-copy {
     max-width: 720px;
     margin: 20px 0 0;
-    color: rgba(239, 246, 255, 0.7);
+    color: #e1edfb;
     line-height: 1.75;
 }
 .about-features {
@@ -43,7 +48,7 @@
 }
 .about-feature p {
     margin: 8px 0 0;
-    color: rgba(239, 246, 255, 0.6);
+    color: #e1edfb;
     font-size: 14px;
     line-height: 1.6;
 }
@@ -60,7 +65,7 @@
 }
 .about-note p {
     margin: 8px 0 0;
-    color: #64748b;
+    color: var(--muted);
     font-size: 14px;
     line-height: 1.7;
 }
@@ -72,9 +77,6 @@
     font-size: 12px;
 }
 @media (max-width: 800px) {
-    .about-panel {
-        padding: 32px;
-    }
     .about-features {
         grid-template-columns: 1fr;
     }

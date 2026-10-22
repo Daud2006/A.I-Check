@@ -1,0 +1,4 @@
+torch==2.8.0+cpu
+transformers==4.57.3
+safetensors==0.6.2
+Pillow==12.1.1

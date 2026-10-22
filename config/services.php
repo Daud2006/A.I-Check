@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'huggingface' => [
+        'token' => env('HF_TOKEN'),
+        'image_model' => env('HF_IMAGE_MODEL', 'Organika/sdxl-detector'),
+        'timeout' => env('HF_IMAGE_TIMEOUT', 60),
+    ],
+
+    'local_ai_worker' => [
+        'enabled' => env('AI_WORKER_ENABLED', false),
+        'url' => env('AI_WORKER_URL', 'http://127.0.0.1:8765'),
+        'secret' => env('AI_WORKER_SECRET'),
+        'connect_timeout' => env('AI_WORKER_CONNECT_TIMEOUT', 2),
+        'health_timeout' => env('AI_WORKER_HEALTH_TIMEOUT', 3),
+        'timeout' => env('AI_WORKER_TIMEOUT', 50),
+        'subprocess_fallback' => env('AI_WORKER_SUBPROCESS_FALLBACK', false),
+    ],
+
 ];

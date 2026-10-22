@@ -94,3 +94,50 @@
     color: #1d4ed8;
     font-weight: 700;
 }
+.auth-register-prompt {
+    margin: 24px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+.auth-page-title {
+    margin-top: 16px;
+}
+.auth-page-action {
+    margin-top: 24px;
+}
+.auth-text-button {
+    border: 0;
+    background: transparent;
+    color: var(--blue-800);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.modal-otorisasi,
+.modal-subscribe {
+    overflow-y: auto;
+}
+.panel-otorisasi {
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 24px 64px rgba(15, 35, 60, 0.2);
+}
+.tombol-tutup-modal {
+    min-width: 40px;
+    min-height: 40px;
+}
+
+@media (max-width: 480px) {
+    .modal-otorisasi {
+        align-items: end;
+        padding: 12px;
+    }
+
+    .panel-otorisasi {
+        width: 100%;
+        max-height: calc(100dvh - 24px);
+        padding: 24px 20px;
+        border-radius: var(--radius-lg);
+    }
+}

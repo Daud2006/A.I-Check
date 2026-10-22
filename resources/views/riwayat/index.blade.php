@@ -10,7 +10,7 @@
             <div>
                 <span class="eyebrow">@include('icon', ['name' => 'clock', 'class' => 'icon-sm'])Aktivitas Anda</span>
                 <h1 class="judul-halaman-riwayat">Riwayat analisis lengkap</h1>
-                <p class="deskripsi-halaman-riwayat">Cari, filter, dan buka kembali seluruh hasil pemeriksaan poster.
+                <p class="deskripsi-halaman-riwayat">Cari, filter, dan tinjau kembali analisis yang tersimpan pada akun Anda.
                 </p>
             </div>
             <button type="button" class="btn btn-danger-outline no-print" id="tombol-hapus-riwayat">@include('icon',
@@ -21,37 +21,48 @@
             <div class="kartu-statistik">
                 <div class="label-statistik">Total analisis</div>
                 <div class="nilai-statistik" id="total-analisis">0</div>
-                <div class="catatan-statistik">Poster telah diperiksa</div>
+                <div class="catatan-statistik">Analisis tersimpan</div>
             </div>
             <div class="kartu-statistik">
-                <div class="label-statistik">Terdeteksi AI</div>
+                <div class="label-statistik">Hasil AI</div>
                 <div class="nilai-statistik" id="analisis-ai">0</div>
-                <div class="catatan-statistik">Skor di atas 75%</div>
+                <div class="catatan-statistik">Diprediksi sebagai AI</div>
             </div>
             <div class="kartu-statistik">
-                <div class="label-statistik">Rata-rata skor AI</div>
+                <div class="label-statistik">Rata-rata skor model</div>
                 <div class="nilai-statistik" id="rata-rata-skor">0%</div>
-                <div class="catatan-statistik">Dari seluruh analisis</div>
+                <div class="catatan-statistik">Kelas yang diprediksi</div>
             </div>
         </div>
 
         <div class="filter-riwayat no-print">
             <label class="pencarian-riwayat">@include('icon', ['name' => 'search'])<input id="pencarian-riwayat"
-                    class="form-control" placeholder="Cari nama poster..."></label>
-            <select id="filter-riwayat" class="form-control">
-                <option value="all">Semua hasil</option>
-                <option value="ai">Kemungkinan AI</option>
-                <option value="review">Perlu ditinjau</option>
-                <option value="human">Kemungkinan asli</option>
+                    class="form-control" aria-label="Cari riwayat berdasarkan nama file" placeholder="Cari nama file..."></label>
+            <select id="filter-riwayat" class="form-control" aria-label="Filter riwayat berdasarkan hasil">
+                <option value="all">Semua status</option>
+                <option value="ai">Prediksi AI-generated</option>
+                <option value="human">Prediksi human</option>
+                <option value="review">Belum selesai atau gagal</option>
             </select>
-            <select id="urutan-riwayat" class="form-control">
+            <select id="urutan-riwayat" class="form-control" aria-label="Urutkan riwayat">
                 <option value="newest">Terbaru</option>
                 <option value="highest">Skor tertinggi</option>
                 <option value="lowest">Skor terendah</option>
             </select>
         </div>
 
-        <div class="daftar-riwayat" id="daftar-riwayat"></div>
+        <div
+            class="daftar-riwayat"
+            id="daftar-riwayat"
+            data-analyses="{{ json_encode($analyses, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+            data-delete-url="{{ route('history.destroy', ['analysisId' => '__ID__']) }}"
+            data-delete-all-url="{{ route('history.destroy-all') }}"
+            aria-live="polite"
+        >
+            <div class="kosong-riwayat">
+                <p>Memuat riwayat analisis...</p>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -70,17 +81,17 @@
             <img id="gambar-detail-riwayat" class="gambar-detail-riwayat" alt="Gambar yang dianalisis" hidden>
 
             <p id="pesan-gambar-detail-riwayat" class="pesan-gambar-detail-riwayat" hidden>
-                Gambar tidak tersimpan pada riwayat lama ini.
+                Pratinjau gambar tidak tersedia.
             </p>
         </div>
 
         <div class="skor-detail-riwayat">
             <div class="kotak-skor-detail">
-                <div class="label-skor-detail">Probabilitas AI</div>
+                <div class="label-skor-detail" id="label-hasil-detail">Hasil klasifikasi</div>
                 <div class="nilai-skor-detail" id="nilai-ai-detail">0%</div>
             </div>
             <div class="kotak-skor-detail netral">
-                <div class="label-skor-detail">Probabilitas manusia</div>
+                <div class="label-skor-detail">Skor kelas terpilih</div>
                 <div class="nilai-skor-detail" style="color:#10243e" id="nilai-manusia-detail">0%</div>
             </div>
         </div>

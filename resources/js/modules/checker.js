@@ -1,4 +1,4 @@
-// Unggah dan hasil deteksi.
+// Unggah gambar dan tampilkan hanya hasil yang dikembalikan backend.
 const inputGambar = document.getElementById('input-gambar');
 const tombolPilihGambar = document.getElementById('tombol-pilih-gambar');
 const areaDropGambar = document.getElementById('area-drop-gambar');
@@ -12,221 +12,251 @@ const tombolHapusGambar = document.getElementById('tombol-hapus-gambar');
 const tombolAnalisis = document.getElementById('tombol-analisis');
 const kemajuanAnalisis = document.getElementById('kemajuan-analisis');
 const isiKemajuan = document.getElementById('isi-kemajuan');
+const lajurProgres = document.querySelector('.lajur-progres[role="progressbar"]');
 const nilaiKemajuan = document.getElementById('nilai-kemajuan');
+const statusKemajuan = document.getElementById('status-kemajuan');
 const areaSiapAnalisis = document.getElementById('area-siap-analisis');
 const hasilAnalisis = document.getElementById('hasil-analisis');
+const pesanChecker = document.getElementById('pesan-checker');
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
+const ukuranMaksimal = 10 * 1024 * 1024;
+const mimeDidukung = ['image/jpeg', 'image/png', 'image/webp'];
 let fileTerpilih = null;
 let urlPratinjau = '';
+let unggahanBerlangsung = false;
 
-// Membuat gambar pratinjau kecil untuk disimpan dalam riwayat.
-const buatPratinjauRiwayat = (file) => new Promise((resolve) => {
-    if (!file) {
-        resolve('');
-        return;
-    }
-
-    const urlSementara = URL.createObjectURL(file);
-    const gambar = new Image();
-
-    gambar.onload = () => {
-        try {
-            const batasSisi = 640;
-            const skala = Math.min(
-                1,
-                batasSisi / Math.max(
-                    gambar.naturalWidth,
-                    gambar.naturalHeight
-                )
-            );
-
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.max(
-                1,
-                Math.round(gambar.naturalWidth * skala)
-            );
-            canvas.height = Math.max(
-                1,
-                Math.round(gambar.naturalHeight * skala)
-            );
-
-            const konteks = canvas.getContext('2d');
-
-            if (!konteks) {
-                URL.revokeObjectURL(urlSementara);
-                resolve('');
-                return;
-            }
-
-            konteks.drawImage(
-                gambar,
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
-
-            const hasil = canvas.toDataURL('image/jpeg', 0.65);
-
-            URL.revokeObjectURL(urlSementara);
-            resolve(hasil);
-        } catch (error) {
-            URL.revokeObjectURL(urlSementara);
-            resolve('');
-        }
-    };
-
-    gambar.onerror = () => {
-        URL.revokeObjectURL(urlSementara);
-        resolve('');
-    };
-
-    gambar.src = urlSementara;
-});
-
-const elemenMarker = areaPratinjau ? [...areaPratinjau.querySelectorAll('.titik-marker')] : [];
+const elemenMarker = areaPratinjau
+    ? [...areaPratinjau.querySelectorAll('.titik-marker')]
+    : [];
 
 const aturTampilanUpload = (terlihat) => {
-    if (tampilanUpload) {
-        tampilanUpload.hidden = !terlihat;
-        tampilanUpload.classList.toggle('is-hidden', !terlihat);
-    }
+    if (!tampilanUpload) return;
+
+    tampilanUpload.hidden = !terlihat;
+    tampilanUpload.classList.toggle('is-hidden', !terlihat);
 };
 
 const aturTampilanHasil = (terlihat) => {
-    if (tampilanHasil) {
-        tampilanHasil.hidden = !terlihat;
-        tampilanHasil.classList.toggle('is-visible', terlihat);
+    if (!tampilanHasil) return;
+
+    tampilanHasil.hidden = !terlihat;
+    tampilanHasil.classList.toggle('is-visible', terlihat);
+};
+
+const tampilkanPesan = (pesan, { error = false, tautanLogin = false } = {}) => {
+    if (pesanChecker) {
+        pesanChecker.textContent = pesan;
+        pesanChecker.hidden = false;
+        pesanChecker.classList.toggle('is-error', error);
     }
+
+    if (!hasilAnalisis) return;
+
+    hasilAnalisis.replaceChildren();
+    const pesanElement = document.createElement('p');
+    pesanElement.className = error ? 'checker-message-error' : 'checker-message-success';
+    pesanElement.setAttribute('role', error ? 'alert' : 'status');
+    pesanElement.textContent = pesan;
+    hasilAnalisis.append(pesanElement);
+
+    if (tautanLogin && inputGambar?.dataset.authUrl) {
+        const loginLink = document.createElement('a');
+        loginLink.href = inputGambar.dataset.authUrl;
+        loginLink.className = 'btn btn-primary';
+        loginLink.textContent = 'Masuk ke akun';
+        hasilAnalisis.append(loginLink);
+    }
+
+    if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;
+    hasilAnalisis.hidden = false;
+};
+
+const tampilkanPrediksi = (payload) => {
+    const label = {
+        artificial: 'Cenderung dihasilkan oleh AI',
+        human: 'Cenderung dibuat manusia',
+    }[payload.result_label];
+    const confidence = payload.confidence_score;
+
+    if (!label || typeof confidence !== 'number' || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+        tampilkanPesan('Hasil dari layanan analisis tidak dapat diverifikasi.', { error: true });
+        return false;
+    }
+
+    tampilkanPesan(`${label}. Skor model: ${(confidence * 100).toFixed(2)}%.`);
+    const catatan = document.createElement('p');
+    catatan.className = 'deskripsi-panel';
+    catatan.textContent = 'Prediksi model dapat keliru dan bukan bukti pasti. Hasil sebaiknya ditinjau bersama informasi lain.';
+    hasilAnalisis?.append(catatan);
+
+    return true;
+};
+
+const aturProgres = (nilai) => {
+    if (isiKemajuan) isiKemajuan.style.width = `${nilai}%`;
+    if (nilaiKemajuan) nilaiKemajuan.textContent = `${nilai}%`;
+    if (lajurProgres) lajurProgres.setAttribute('aria-valuenow', String(nilai));
+};
+
+const aturStatusTombol = (unggahanSelesai = false) => {
+    if (!tombolAnalisis) return;
+
+    tombolAnalisis.disabled = unggahanBerlangsung || unggahanSelesai;
+    tombolAnalisis.textContent = unggahanSelesai ? 'Analisis Selesai' : 'Unggah Gambar';
 };
 
 const resetPemeriksaan = () => {
+    if (unggahanBerlangsung) return;
+
     fileTerpilih = null;
     if (urlPratinjau) URL.revokeObjectURL(urlPratinjau);
     urlPratinjau = '';
+    if (gambarPratinjau) gambarPratinjau.removeAttribute('src');
     if (inputGambar) inputGambar.value = '';
-    aturTampilanUpload(true);
-    aturTampilanHasil(false);
-    if (hasilAnalisis) hasilAnalisis.hidden = true;
+    if (namaFile) namaFile.textContent = '-';
+    if (ukuranFile) ukuranFile.textContent = '-';
+    if (pesanChecker) {
+        pesanChecker.textContent = '';
+        pesanChecker.hidden = true;
+        pesanChecker.classList.remove('is-error');
+    }
+    if (kemajuanAnalisis) kemajuanAnalisis.hidden = true;
+    if (kemajuanAnalisis) kemajuanAnalisis.setAttribute('aria-busy', 'false');
+    if (statusKemajuan) statusKemajuan.textContent = 'Mengunggah gambar...';
+    if (hasilAnalisis) {
+        hasilAnalisis.replaceChildren();
+        hasilAnalisis.hidden = true;
+    }
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = false;
     elemenMarker.forEach((marker) => { marker.hidden = true; });
+    aturProgres(0);
+    aturStatusTombol();
+    aturTampilanUpload(true);
+    aturTampilanHasil(false);
 };
 
 const pilihFile = (file) => {
-    if (!file || !file.type.startsWith('image/')) return;
-    if (file.size > 10 * 1024 * 1024) {
-        window.alert('Ukuran gambar maksimal 10 MB.');
+    if (!file) return;
+
+    if (!mimeDidukung.includes(file.type)) {
+        tampilkanPesan('Format gambar yang didukung adalah JPEG, PNG, dan WebP.', { error: true });
         return;
     }
+
+    if (file.size > ukuranMaksimal) {
+        tampilkanPesan('Ukuran gambar maksimal 10 MB.', { error: true });
+        return;
+    }
+
     fileTerpilih = file;
     if (urlPratinjau) URL.revokeObjectURL(urlPratinjau);
     urlPratinjau = URL.createObjectURL(file);
     if (gambarPratinjau) gambarPratinjau.src = urlPratinjau;
     if (namaFile) namaFile.textContent = file.name;
     if (ukuranFile) ukuranFile.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    if (pesanChecker) {
+        pesanChecker.textContent = '';
+        pesanChecker.hidden = true;
+    }
+    if (hasilAnalisis) {
+        hasilAnalisis.replaceChildren();
+        hasilAnalisis.hidden = true;
+    }
+    if (areaSiapAnalisis) areaSiapAnalisis.hidden = false;
+    aturStatusTombol();
     aturTampilanUpload(false);
     aturTampilanHasil(true);
+};
+
+const unggahGambar = () => {
+    if (!fileTerpilih || !inputGambar?.dataset.uploadUrl || unggahanBerlangsung) return;
+
+    const data = new FormData();
+    data.append('image', fileTerpilih);
+    const request = new XMLHttpRequest();
+
+    unggahanBerlangsung = true;
+    aturStatusTombol();
+    if (pesanChecker) pesanChecker.hidden = true;
+    if (kemajuanAnalisis) kemajuanAnalisis.hidden = false;
+    if (kemajuanAnalisis) kemajuanAnalisis.setAttribute('aria-busy', 'true');
+    if (statusKemajuan) statusKemajuan.textContent = 'Mengunggah gambar...';
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = false;
     if (hasilAnalisis) hasilAnalisis.hidden = true;
+    aturProgres(0);
+
+    request.open('POST', inputGambar.dataset.uploadUrl);
+    request.timeout = 75000;
+    request.setRequestHeader('Accept', 'application/json');
+    if (csrfToken) request.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+
+    request.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+            aturProgres(Math.min(99, Math.round((event.loaded / event.total) * 100)));
+        }
+    });
+
+    request.upload.addEventListener('load', () => {
+        if (statusKemajuan) statusKemajuan.textContent = 'Gambar diterima. Menunggu analisis AI...';
+    });
+
+    request.addEventListener('load', () => {
+        let payload = {};
+        try {
+            payload = JSON.parse(request.responseText);
+        } catch {
+            payload = {};
+        }
+
+        if (request.status === 201 && payload.status === 'completed') {
+            aturProgres(100);
+            const predictionIsValid = tampilkanPrediksi(payload);
+            if (kemajuanAnalisis) kemajuanAnalisis.hidden = true;
+            aturStatusTombol(predictionIsValid);
+            return;
+        }
+
+        const validationMessage = payload.errors?.image?.[0];
+        if (request.status === 422) {
+            tampilkanPesan(validationMessage || payload.message || 'File gambar tidak valid.', { error: true });
+        } else if (request.status === 401) {
+            tampilkanPesan('Silakan masuk sebelum mengunggah gambar.', { error: true, tautanLogin: true });
+        } else {
+            tampilkanPesan(payload.message || 'Gambar gagal diunggah. Silakan coba kembali.', { error: true });
+        }
+    });
+
+    request.addEventListener('error', () => {
+        tampilkanPesan('Koneksi gagal. Periksa jaringan Anda lalu coba kembali.', { error: true });
+    });
+
+    request.addEventListener('timeout', () => {
+        tampilkanPesan('Analisis memerlukan waktu terlalu lama. Silakan coba kembali.', { error: true });
+    });
+
+    request.addEventListener('loadend', () => {
+        unggahanBerlangsung = false;
+        if (kemajuanAnalisis) kemajuanAnalisis.setAttribute('aria-busy', 'false');
+        if (request.status !== 201) aturStatusTombol();
+        if (kemajuanAnalisis && request.status !== 201) kemajuanAnalisis.hidden = true;
+    });
+
+    request.send(data);
 };
 
 tombolPilihGambar?.addEventListener('click', () => inputGambar?.click());
 inputGambar?.addEventListener('change', () => pilihFile(inputGambar.files?.[0]));
 tombolHapusGambar?.addEventListener('click', resetPemeriksaan);
+tombolAnalisis?.addEventListener('click', unggahGambar);
 
-areaDropGambar?.addEventListener('dragover', (event) => { event.preventDefault(); tampilanUpload?.classList.add('is-dragging'); });
+areaDropGambar?.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    tampilanUpload?.classList.add('is-dragging');
+});
 areaDropGambar?.addEventListener('dragleave', () => tampilanUpload?.classList.remove('is-dragging'));
 areaDropGambar?.addEventListener('drop', (event) => {
     event.preventDefault();
     tampilanUpload?.classList.remove('is-dragging');
-    pilihFile(event.dataTransfer.files?.[0]);
-});
-
-const aturProgres = (nilai) => {
-    if (isiKemajuan) isiKemajuan.style.width = `${nilai}%`;
-    if (nilaiKemajuan) nilaiKemajuan.textContent = `${nilai}%`;
-};
-
-const klasifikasiHasil = (skor) => skor >= 75 ? 'Kemungkinan AI' : skor >= 45 ? 'Perlu ditinjau' : 'Kemungkinan asli';
-const kelasStatus = (skor) => skor >= 75 ? 'status-ai' : skor >= 45 ? 'status-review' : 'status-human';
-const warnaStatus = (skor) => skor >= 75 ? '#dc594f' : skor >= 45 ? '#d79724' : '#2497ff';
-
-const simpanRiwayat = (item) => {
-    const riwayatSaatIni = JSON.parse(localStorage.getItem('verifai-history') || '[]');
-    localStorage.setItem('verifai-history', JSON.stringify([item, ...riwayatSaatIni]));
-};
-
-const tampilkanHasilAnalisis = async (skor) => {
-    const skorManusia = 100 - skor;
-    const label = klasifikasiHasil(skor);
-    const warna = warnaStatus(skor);
-    const id = Date.now();
-    const gambarRiwayat = await buatPratinjauRiwayat(fileTerpilih);
-    const item = {
-        id,
-        name: fileTerpilih.name,
-        date: 'Baru saja',
-        aiScore: skor,
-        humanScore: skorManusia,
-        label,
-        imageData: gambarRiwayat
-    };
-    hasilAnalisis.innerHTML = `
-        <div class="kepala-hasil"><span class="eyebrow"><svg aria-hidden="true" class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg>Analisis selesai</span><span class="id-hasil">ID #${String(id).slice(-6)}</span></div>
-        <div class="konten-hasil">
-            <div class="lingkaran-skor" style="background:conic-gradient(${warna} ${skor}%,#e8f1f8 0)"><div class="lingkaran-skor-dalam"><div><strong class="nilai-skor">${skor}%</strong><span class="label-skor">AI</span></div></div></div>
-            <div><div class="status-hasil" style="color:${warna}">${label}</div><h2 class="judul-hasil">Terdeteksi indikasi visual AI</h2></div>
-        </div>
-        <div class="kotak-probabilitas"><div class="kepala-probabilitas"><span>Probabilitas</span><span style="color:#94a3b8">Skor model</span></div>
-            <div class="baris-probabilitas"><div class="label-probabilitas"><span>Buatan AI</span><strong>${skor}%</strong></div><div class="lajur-progres"><div class="isi-progres" style="width:${skor}%;background:${warna}"></div></div></div>
-            <div class="baris-probabilitas"><div class="label-probabilitas"><span>Buatan manusia</span><strong>${skorManusia}%</strong></div><div class="lajur-progres"><div class="isi-progres" style="width:${skorManusia}%;background:#2497ff"></div></div></div>
-        </div>
-        <div class="peringatan-hasil"><svg aria-hidden="true" class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg><p>Hasil ini merupakan estimasi model. Gunakan pemeriksaan sumber dan metadata untuk verifikasi lanjutan.</p></div>
-        <div class="aksi-hasil"><button type="button" class="btn btn-secondary" id="tombol-cek-lagi"><svg aria-hidden="true" class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 7v5h-5"/><path d="M18.5 16a8 8 0 10.5-9l1 5"/></svg>Periksa lagi</button><button type="button" class="btn btn-primary" onclick="window.print()"><svg aria-hidden="true" class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4 4-4"/><path d="M4 20h16"/></svg>Simpan hasil</button></div>`;
-    areaSiapAnalisis.hidden = true;
-    hasilAnalisis.hidden = false;
-    document.getElementById('tombol-cek-lagi')?.addEventListener('click', resetPemeriksaan);
-    simpanRiwayat(item);
-
-    elemenMarker.forEach((marker, index) => {
-        const posisi = [[32,38],[67,54],[53,76]];
-        const [left, top] = posisi[index];
-        marker.style.left = `${left}%`;
-        marker.style.top = `${top}%`;
-        marker.hidden = skor < 45 ? true : false;
-    });
-};
-
-tombolAnalisis?.addEventListener('click', async () => {
-    if (!fileTerpilih) return;
-    tombolAnalisis.disabled = true;
-    kemajuanAnalisis.hidden = false;
-    let progres = 8;
-    aturProgres(progres);
-    const timer = window.setInterval(() => { progres = Math.min(progres + Math.ceil(Math.random() * 13), 91); aturProgres(progres); }, 220);
-    try {
-        const endpoint = import.meta.env.VITE_HF_API_URL;
-        let skor;
-        if (endpoint) {
-            const respons = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': fileTerpilih.type }, body: fileTerpilih });
-            if (!respons.ok) throw new Error('Model tidak dapat dihubungi.');
-            const payload = await respons.json();
-            const prediksi = Array.isArray(payload) && Array.isArray(payload[0]) ? payload[0] : payload;
-            const prediksiAi = prediksi.find((item) => /ai|artificial|fake|generated/i.test(item.label || ''));
-            skor = Math.round((prediksiAi?.score ?? prediksi[0]?.score ?? .5) * 100);
-        } else {
-            await new Promise((resolve) => window.setTimeout(resolve, 1500));
-            skor = 45 + ((fileTerpilih.size + fileTerpilih.name.length * 17) % 51);
-        }
-        window.clearInterval(timer);
-        aturProgres(100);
-        await tampilkanHasilAnalisis(skor);
-    } catch (error) {
-        window.clearInterval(timer);
-        aturProgres(0);
-        window.alert(error instanceof Error ? error.message : 'Analisis gagal.');
-        tombolAnalisis.disabled = false;
-        return;
-    }
-    tombolAnalisis.disabled = false;
+    pilihFile(event.dataTransfer?.files?.[0]);
 });

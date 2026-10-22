@@ -38,10 +38,15 @@ const aturModeOtorisasi = (mode) => {
 };
 
 if (formulirMasuk && formulirDaftar) {
-    aturModeOtorisasi('login');
+    aturModeOtorisasi(modalOtorisasi?.dataset.authInitialMode || 'login');
+
+    if (modalOtorisasi?.dataset.authOpenOnLoad === 'true') {
+        bukaModalOtorisasi(modalOtorisasi.dataset.authInitialMode || 'login');
+    }
 }
 
 document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
     const pemicuModal = event.target.closest('[data-auth-open]');
     const tombolTutup = event.target.closest('[data-auth-close]');
     const tombolMode = event.target.closest('[data-auth-mode]');
@@ -56,22 +61,4 @@ modalOtorisasi?.addEventListener('mousedown', (event) => {
 
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') tutupModalOtorisasi();
-});
-
-formulirMasuk?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const dataFormulir = new FormData(formulirMasuk);
-    localStorage.setItem('ai-check-user', JSON.stringify({ name: String(dataFormulir.get('email')).split('@')[0], email: String(dataFormulir.get('email')) }));
-    tutupModalOtorisasi();
-});
-
-formulirDaftar?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const dataFormulir = new FormData(formulirDaftar);
-    if (dataFormulir.get('password') !== dataFormulir.get('confirmPassword')) {
-        window.alert('Konfirmasi kata sandi belum sama.');
-        return;
-    }
-    localStorage.setItem('ai-check-user', JSON.stringify({ name: String(dataFormulir.get('name')), email: String(dataFormulir.get('email')) }));
-    tutupModalOtorisasi();
 });

@@ -5,11 +5,12 @@
     justify-content: center;
     gap: 8px;
     border: 0;
-    border-radius: 12px;
+    min-height: 44px;
+    border-radius: var(--radius-md);
     padding: 12px 20px;
     font-size: 14px;
     font-weight: 700;
-    transition: 0.2s ease;
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 .btn-primary {
     background: var(--blue-700);
@@ -52,10 +53,18 @@
     border-color: #fecaca;
     color: #ef4444;
 }
+.btn-danger-outline:hover {
+    background: #fff7f7;
+}
 .btn-full {
     width: 100%;
 }
 .btn:disabled {
     cursor: wait;
     opacity: 0.6;
+}
+
+.icon-button {
+    min-width: 40px;
+    min-height: 40px;
 }
