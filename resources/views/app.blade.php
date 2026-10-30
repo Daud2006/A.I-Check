@@ -131,8 +131,8 @@
                 </label>
                 <div class="baris-formulir">
                     <label class="cek-formulir"><input type="checkbox" name="remember" value="1"> Ingat saya</label>
-                    <button type="button" class="tautan-formulir" style="border:0;background:none;">Lupa kata
-                        sandi?</button>
+                    <button type="button" class="tautan-formulir" style="border:0;background:none;"
+                        data-auth-mode="forgot">Lupa kata sandi?</button>
                 </div>
                 <button class="btn btn-primary btn-full" type="submit">Masuk</button>
             </form>
@@ -159,6 +159,38 @@
                 <label class="cek-formulir"><input type="checkbox" required> Saya menyetujui Syarat Penggunaan dan
                     Kebijakan Privasi A.I Check.</label>
                 <button class="btn btn-primary btn-full" type="submit">Buat akun</button>
+            </form>
+
+            <form class="formulir-otorisasi" id="formulir-lupa-password"
+                data-send-otp-url="{{ route('password.otp.send') }}"
+                data-reset-password-url="{{ route('password.otp.reset') }}" hidden>
+                <label class="kolom-formulir">
+                    <span class="label-formulir">Email</span>
+                    <div class="baris-email-otp">
+                        <input class="form-control" type="email" name="email" required maxlength="255"
+                            autocomplete="email" placeholder="nama@email.com">
+                        <button class="btn btn-secondary" type="button" data-auth-send-otp>Kirim OTP</button>
+                    </div>
+                </label>
+                <label class="kolom-formulir">
+                    <span class="label-formulir">OTP</span>
+                    <input class="form-control" type="text" name="otp" required maxlength="64"
+                        autocomplete="one-time-code" autocapitalize="none" spellcheck="false"
+                        placeholder="Masukkan kode OTP dari email">
+                </label>
+                <label class="kolom-formulir">
+                    <span class="label-formulir">Password Baru</span>
+                    <input class="form-control" type="password" name="password" required minlength="8"
+                        autocomplete="new-password"
+                        placeholder="Masukkan password baru">
+                </label>
+                <label class="kolom-formulir">
+                    <span class="label-formulir">Konfirmasi Password Baru</span>
+                    <input class="form-control" type="password" name="password_confirmation" required minlength="8"
+                        autocomplete="new-password" placeholder="Ulangi password baru">
+                </label>
+                <p class="auth-inline-notice" id="auth-reset-notice" role="status" aria-live="polite" hidden></p>
+                <button class="btn btn-primary btn-full" type="submit" data-auth-reset-password>Ubah</button>
             </form>
 
             <div class="bagian-bawah-modal">
