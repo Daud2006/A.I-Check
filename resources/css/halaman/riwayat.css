@@ -473,3 +473,119 @@
         background: #fff !important;
     }
 }
+
+.swal2-popup.swal-riwayat-popup {
+    width: min(calc(100vw - 32px), 29rem);
+    border-radius: 16px;
+    padding: 1.75rem;
+    font-family: inherit;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.2);
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-title {
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-text {
+    color: #475569;
+    font-size: 0.925rem;
+    line-height: 1.6;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-actions {
+    width: 100%;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-confirm,
+.swal2-popup.swal-riwayat-popup .swal-riwayat-cancel,
+.swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm {
+    min-height: 44px;
+    margin: 0;
+    border: 0;
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: background-color 140ms ease, transform 140ms ease;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-confirm {
+    background: #dc2626;
+    color: #fff;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-confirm:hover {
+    background: #b91c1c;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-cancel {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-cancel:hover {
+    background: #cbd5e1;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm {
+    background: #2563eb;
+    color: #fff;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm:hover {
+    background: #1d4ed8;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-confirm:focus-visible,
+.swal2-popup.swal-riwayat-popup .swal-riwayat-cancel:focus-visible,
+.swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.35);
+    outline-offset: 2px;
+}
+
+.swal2-popup.swal-riwayat-toast {
+    width: min(calc(100vw - 32px), 27rem);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    font-family: inherit;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.16);
+}
+
+.swal-riwayat-toast .swal2-title {
+    color: #0f172a;
+    font-size: 0.925rem;
+    font-weight: 700;
+}
+
+.swal-riwayat-toast .swal2-html-container {
+    margin: 0.25rem 0 0;
+    color: #475569;
+    font-size: 0.825rem;
+    line-height: 1.5;
+}
+
+#tombol-hapus-riwayat:disabled {
+    cursor: wait;
+    opacity: 0.55;
+}
+
+@media (max-width: 480px) {
+    .swal2-popup.swal-riwayat-popup {
+        width: calc(100vw - 24px);
+        padding: 1.25rem;
+    }
+
+    .swal2-popup.swal-riwayat-popup .swal-riwayat-actions {
+        flex-direction: column-reverse;
+    }
+
+    .swal2-popup.swal-riwayat-popup .swal-riwayat-confirm,
+    .swal2-popup.swal-riwayat-popup .swal-riwayat-cancel,
+    .swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm {
+        width: 100%;
+    }
+}

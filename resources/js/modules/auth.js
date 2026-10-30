@@ -1,3 +1,5 @@
+import Swal from 'sweetalert2';
+
 // Modal masuk dan daftar.
 const modalOtorisasi = document.getElementById('modal-otorisasi');
 const formulirMasuk = document.getElementById('formulir-masuk');
@@ -7,6 +9,73 @@ const judulModal = document.getElementById('judul-modal');
 const deskripsiModal = document.getElementById('deskripsi-modal');
 const ikonModal = document.getElementById('ikon-modal');
 const teksBawahModal = document.getElementById('teks-bawah-modal');
+const formulirLogout = document.querySelectorAll('form[data-confirm-logout]');
+
+let konfirmasiLogoutTerbuka = false;
+let formulirLogoutDisetujui = null;
+
+if (document.body?.dataset.logoutSuccess === 'true') {
+    Swal.fire({
+        title: 'Berhasil Keluar',
+        text: 'Anda telah berhasil keluar dari akun A.I-Check.',
+        icon: 'success',
+        timer: 2500,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        buttonsStyling: false,
+        customClass: {
+            popup: 'swal-riwayat-popup',
+            title: 'swal-riwayat-title',
+            htmlContainer: 'swal-riwayat-text',
+        },
+    });
+}
+
+formulirLogout.forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+        if (formulirLogoutDisetujui === form) {
+            formulirLogoutDisetujui = null;
+            return;
+        }
+
+        event.preventDefault();
+        if (konfirmasiLogoutTerbuka) return;
+
+        konfirmasiLogoutTerbuka = true;
+        const tombolLogout = form.querySelector('button[type="submit"]');
+        if (tombolLogout) tombolLogout.disabled = true;
+
+        try {
+            const result = await Swal.fire({
+                title: 'Keluar dari Akun?',
+                text: 'Apakah kamu yakin ingin keluar dari akun A.I-Check?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal',
+                buttonsStyling: false,
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'swal-riwayat-popup',
+                    title: 'swal-riwayat-title',
+                    htmlContainer: 'swal-riwayat-text',
+                    actions: 'swal-riwayat-actions',
+                    confirmButton: 'swal-riwayat-confirm',
+                    cancelButton: 'swal-riwayat-cancel',
+                },
+            });
+
+            if (result.isConfirmed) {
+                formulirLogoutDisetujui = form;
+                form.requestSubmit();
+            }
+        } finally {
+            konfirmasiLogoutTerbuka = false;
+            if (tombolLogout) tombolLogout.disabled = false;
+        }
+    });
+});
 
 const bukaModalOtorisasi = (mode = 'login') => {
     if (!modalOtorisasi) return;

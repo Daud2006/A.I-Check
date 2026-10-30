@@ -98,10 +98,27 @@ class AuthenticationTest extends TestCase
         $oldToken = session()->token();
 
         $this->post(route('logout'))
-            ->assertRedirect(route('home'));
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('logout_success', true)
+            ->assertSessionMissing('status');
 
         $this->assertGuest();
         $this->assertNotSame($oldToken, session()->token());
+    }
+
+    public function test_logout_success_notice_is_consumed_once_on_the_home_page(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('logout'))
+            ->assertRedirect(route('home'));
+
+        $this->get(route('home'))
+            ->assertSee('data-logout-success="true"', false)
+            ->assertDontSee('Anda telah keluar.');
+
+        $this->get(route('home'))
+            ->assertSee('data-logout-success="false"', false)
+            ->assertDontSee('Anda telah keluar.');
     }
 
     public function test_private_pages_redirect_guests_and_checker_remains_public(): void

@@ -1,3 +1,6 @@
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
+
 const daftarRiwayat = document.getElementById('daftar-riwayat');
 
 if (daftarRiwayat) {
@@ -13,7 +16,58 @@ if (daftarRiwayat) {
     let riwayat = [];
     let idRiwayatAktif = null;
     let sedangMenghapus = false;
-    let pesanError = '';
+
+    const konfirmasiPenghapusan = async ({ title, text, confirmButtonText }) => {
+        if (sedangMenghapus) return false;
+
+        sedangMenghapus = true;
+        renderRiwayat();
+
+        try {
+            const result = await Swal.fire({
+                title,
+                text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText,
+                cancelButtonText: 'Batal',
+                buttonsStyling: false,
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'swal-riwayat-popup',
+                    title: 'swal-riwayat-title',
+                    htmlContainer: 'swal-riwayat-text',
+                    actions: 'swal-riwayat-actions',
+                    confirmButton: 'swal-riwayat-confirm',
+                    cancelButton: 'swal-riwayat-cancel',
+                },
+            });
+
+            if (result.isConfirmed) return true;
+        } catch {
+            tampilkanNotifikasi('error', 'Konfirmasi tidak dapat ditampilkan', 'Silakan coba kembali.');
+        }
+
+        sedangMenghapus = false;
+        renderRiwayat();
+
+        return false;
+    };
+
+    const tampilkanNotifikasi = (icon, title, text = '') => Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon,
+        title,
+        text,
+        showConfirmButton: false,
+        timer: 3600,
+        timerProgressBar: true,
+        customClass: {
+            popup: 'swal-riwayat-toast',
+        },
+    });
 
     const pesanStatus = (status) => ({
         pending: 'Menunggu analisis',
@@ -102,11 +156,6 @@ if (daftarRiwayat) {
         button.append(svg);
 
         return button;
-    };
-
-    const tampilkanPesan = (message, error = false) => {
-        pesanError = error ? message : '';
-        renderRiwayat();
     };
 
     const buatKeadaanKosong = (title, message) => {
@@ -260,16 +309,11 @@ if (daftarRiwayat) {
             riwayat.filter((item) => item.status === 'completed' && item.label === 'artificial').length,
         );
         document.getElementById('rata-rata-skor').textContent = `${(average * 100).toFixed(2)}%`;
-        if (tombolHapusSemua) tombolHapusSemua.hidden = riwayat.length === 0;
+        if (tombolHapusSemua) {
+            tombolHapusSemua.disabled = sedangMenghapus;
+        }
 
         daftarRiwayat.replaceChildren();
-        if (pesanError) {
-            const notice = document.createElement('p');
-            notice.className = 'checker-message-error';
-            notice.setAttribute('role', 'alert');
-            notice.textContent = pesanError;
-            daftarRiwayat.append(notice);
-        }
 
         if (!filtered.length) {
             const empty = riwayat.length
@@ -283,14 +327,20 @@ if (daftarRiwayat) {
     };
 
     const hapusRequest = async (url) => {
-        const response = await fetch(url, {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'X-CSRF-TOKEN': tokenCsrf || '',
-            },
-        });
+        let response;
+        try {
+            response = await fetch(url, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': tokenCsrf || '',
+                },
+            });
+        } catch {
+            throw new Error('Terjadi kesalahan saat mengirim permintaan penghapusan. Periksa koneksi Anda lalu coba kembali.');
+        }
+
         let payload = {};
         try {
             payload = await response.json();
@@ -305,19 +355,25 @@ if (daftarRiwayat) {
 
     const hapusSatu = async (item) => {
         if (sedangMenghapus || !urlHapus) return;
-        if (!window.confirm('Apakah kamu yakin ingin menghapus riwayat analisis ini?')) return;
+        const dikonfirmasi = await konfirmasiPenghapusan({
+            title: 'Hapus Riwayat Ini?',
+            text: 'Apakah kamu yakin ingin menghapus riwayat analisis ini? Tindakan ini tidak dapat dibatalkan.',
+            confirmButtonText: 'Ya, Hapus',
+        });
+        if (!dikonfirmasi) return;
 
-        sedangMenghapus = true;
-        renderRiwayat();
         try {
             const payload = await hapusRequest(urlHapus.replace('__ID__', encodeURIComponent(item.id)));
-            pesanError = '';
             riwayat = riwayat.filter((entry) => entry.id !== item.id);
             if (idRiwayatAktif === item.id) aturModalDetail(false);
             renderRiwayat();
-            if (payload.cleanup_complete === false) tampilkanPesan(payload.message, true);
+            tampilkanNotifikasi(
+                payload.cleanup_complete === false ? 'warning' : 'success',
+                payload.cleanup_complete === false ? 'Riwayat dihapus, file belum dibersihkan' : 'Riwayat berhasil dihapus',
+                payload.message || '',
+            );
         } catch (error) {
-            tampilkanPesan(error.message, true);
+            tampilkanNotifikasi('error', 'Penghapusan gagal', error.message);
         } finally {
             sedangMenghapus = false;
             renderRiwayat();
@@ -326,20 +382,45 @@ if (daftarRiwayat) {
 
     tombolHapusSemua?.addEventListener('click', async () => {
         if (sedangMenghapus || !urlHapusSemua) return;
-        if (!window.confirm('Apakah kamu yakin ingin menghapus seluruh riwayat analisis?')) return;
 
-        sedangMenghapus = true;
-        renderRiwayat();
+        if (riwayat.length === 0) {
+            await Swal.fire({
+                title: 'Riwayat Kosong',
+                text: 'Riwayat analisis Anda saat ini tidak ada atau sudah kosong.',
+                icon: 'info',
+                confirmButtonText: 'OK',
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'swal-riwayat-popup',
+                    title: 'swal-riwayat-title',
+                    htmlContainer: 'swal-riwayat-text',
+                    actions: 'swal-riwayat-actions',
+                    confirmButton: 'swal-riwayat-info-confirm',
+                },
+            });
+            return;
+        }
+
+        const dikonfirmasi = await konfirmasiPenghapusan({
+            title: 'Hapus Semua Riwayat?',
+            text: 'Apakah kamu yakin ingin menghapus seluruh riwayat analisis? Tindakan ini tidak dapat dibatalkan.',
+            confirmButtonText: 'Ya, Hapus Semua',
+        });
+        if (!dikonfirmasi) return;
+
         try {
             const payload = await hapusRequest(urlHapusSemua);
-            pesanError = '';
             riwayat = [];
             idRiwayatAktif = null;
             aturModalDetail(false);
             renderRiwayat();
-            if (payload.cleanup_complete === false) tampilkanPesan(payload.message, true);
+            tampilkanNotifikasi(
+                payload.cleanup_complete === false ? 'warning' : 'success',
+                payload.cleanup_complete === false ? 'Riwayat dihapus, beberapa file belum dibersihkan' : 'Semua riwayat berhasil dihapus',
+                payload.message || '',
+            );
         } catch (error) {
-            tampilkanPesan(error.message, true);
+            tampilkanNotifikasi('error', 'Penghapusan gagal', error.message);
         } finally {
             sedangMenghapus = false;
             renderRiwayat();

@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body>
+<body data-logout-success="{{ session()->pull('logout_success', false) ? 'true' : 'false' }}">
     <div class="kerangka-situs">
         {{-- Header --}}
         <header class="bagian-header">
@@ -40,7 +40,7 @@
 
                     @auth
                     <a href="{{ route('profile') }}" class="btn btn-secondary">{{ auth()->user()->name }}</a>
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form method="POST" action="{{ route('logout') }}" data-confirm-logout>
                         @csrf
                         <button type="submit" class="btn btn-primary">Keluar</button>
                     </form>
@@ -71,7 +71,7 @@
 
                 @auth
                 <a href="{{ route('profile') }}" class="btn btn-secondary btn-full">Profil</a>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" data-confirm-logout>
                     @csrf
                     <button type="submit" class="btn btn-primary btn-full">Keluar</button>
                 </form>
