@@ -4,6 +4,8 @@ import Swal from 'sweetalert2';
 const modalOtorisasi = document.getElementById('modal-otorisasi');
 const formulirMasuk = document.getElementById('formulir-masuk');
 const formulirDaftar = document.getElementById('formulir-daftar');
+const checkboxPersetujuan = formulirDaftar?.querySelector('[name="terms"]');
+const pesanPersetujuan = document.getElementById('auth-terms-error');
 const formulirLupaPassword = document.getElementById('formulir-lupa-password');
 const pengalihModeOtorisasi = document.getElementById('pengalih-mode-otorisasi');
 const judulModal = document.getElementById('judul-modal');
@@ -17,6 +19,18 @@ const formulirLogout = document.querySelectorAll('form[data-confirm-logout]');
 
 let konfirmasiLogoutTerbuka = false;
 let formulirLogoutDisetujui = null;
+
+checkboxPersetujuan?.addEventListener('invalid', () => {
+    checkboxPersetujuan.setCustomValidity(
+        'Anda harus menyetujui Syarat Penggunaan dan Kebijakan Privasi terlebih dahulu.'
+    );
+    if (pesanPersetujuan) pesanPersetujuan.hidden = false;
+});
+
+checkboxPersetujuan?.addEventListener('change', () => {
+    checkboxPersetujuan.setCustomValidity('');
+    if (pesanPersetujuan) pesanPersetujuan.hidden = checkboxPersetujuan.checked;
+});
 
 if (document.body?.dataset.logoutSuccess === 'true') {
     Swal.fire({
@@ -212,11 +226,25 @@ formulirLupaPassword?.addEventListener('submit', (event) => {
         formulirLupaPassword.dataset.resetPasswordUrl,
         Object.fromEntries(dataFormulir.entries()),
         tombolUbahPassword
-    ).then((berhasil) => {
+    ).then(async (berhasil) => {
         if (!berhasil) return;
         formulirLupaPassword.querySelector('[name="otp"]').value = '';
         formulirLupaPassword.querySelector('[name="password"]').value = '';
         formulirLupaPassword.querySelector('[name="password_confirmation"]').value = '';
+        await Swal.fire({
+            title: 'Password berhasil diubah',
+            text: 'Silakan masuk menggunakan password baru Anda.',
+            icon: 'success',
+            confirmButtonText: 'Kembali ke Login',
+            buttonsStyling: false,
+            customClass: {
+                popup: 'swal-riwayat-popup',
+                title: 'swal-riwayat-title',
+                htmlContainer: 'swal-riwayat-text',
+                confirmButton: 'swal-riwayat-confirm',
+            },
+        });
+        aturModeOtorisasi('login');
     });
 });
 

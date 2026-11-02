@@ -35,6 +35,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'min:3', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', PasswordRule::min(8)->letters()->numbers()],
+            'terms' => ['accepted'],
         ], [
             'name.required' => 'Nama wajib diisi.',
             'name.min' => 'Nama minimal 3 karakter.',
@@ -48,6 +49,7 @@ class AuthController extends Controller
             'password.min' => 'Kata sandi minimal 8 karakter.',
             'password.letters' => 'Kata sandi harus mengandung huruf.',
             'password.numbers' => 'Kata sandi harus mengandung angka.',
+            'terms.accepted' => 'Anda harus menyetujui Syarat Penggunaan dan Kebijakan Privasi terlebih dahulu.',
         ]);
 
         $user = User::create([

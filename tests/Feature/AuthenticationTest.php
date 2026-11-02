@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -13,11 +14,14 @@ class AuthenticationTest extends TestCase
 
     public function test_registration_creates_a_hashed_regular_user_and_authenticates_them(): void
     {
+        Notification::fake();
+
         $response = $this->post(route('register'), [
             'name' => 'Contoh Pengguna',
             'email' => 'contoh@example.test',
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
+            'terms' => '1',
             'role' => 'admin',
         ]);
 
@@ -27,6 +31,38 @@ class AuthenticationTest extends TestCase
         $this->assertSame('user', $user->role);
         $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('home'));
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => 'contoh@example.test']);
+        Notification::assertNothingSent();
+    }
+
+    public function test_registration_requires_terms_acceptance(): void
+    {
+        $this->from(route('auth'))->post(route('register'), [
+            'name' => 'Pengguna Baru',
+            'email' => 'baru@example.test',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+        ])->assertRedirect(route('auth'))
+            ->assertSessionHasErrors([
+                'terms' => 'Anda harus menyetujui Syarat Penggunaan dan Kebijakan Privasi terlebih dahulu.',
+            ]);
+
+        $this->assertDatabaseMissing('users', ['email' => 'baru@example.test']);
+        $this->assertGuest();
+    }
+
+    public function test_registration_rejects_an_invalid_email(): void
+    {
+        $this->from(route('auth'))->post(route('register'), [
+            'name' => 'Pengguna Baru',
+            'email' => 'bukan-email',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+            'terms' => '1',
+        ])->assertRedirect(route('auth'))
+            ->assertSessionHasErrors(['email']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'bukan-email']);
     }
 
     public function test_registration_rejects_an_existing_email(): void
@@ -38,6 +74,7 @@ class AuthenticationTest extends TestCase
             'email' => 'duplikat@example.test',
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
+            'terms' => '1',
         ])->assertRedirect(route('auth'))
             ->assertSessionHasErrors(['email']);
 

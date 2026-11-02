@@ -148,7 +148,9 @@
                         placeholder="Masukkan nama lengkap"></label>
                 <label class="kolom-formulir"><span class="label-formulir">Alamat email</span><input
                         class="form-control" type="email" name="email" value="{{ old('email') }}" required
-                        autocomplete="email" placeholder="nama@email.com"></label>
+                        autocomplete="email" placeholder="nama@email.com">
+                    <small class="auth-field-help">Gunakan alamat email yang benar, aktif, dan dapat Anda akses. Email ini akan digunakan untuk pemulihan akun jika Anda lupa password.</small>
+                </label>
                 <label class="kolom-formulir"><span class="label-formulir">Kata sandi</span><input class="form-control"
                         type="password" name="password" required minlength="8" autocomplete="new-password"
                         placeholder="Minimal 8 karakter"></label>
@@ -156,8 +158,11 @@
                         class="form-control" type="password" name="password_confirmation" required minlength="8"
                         autocomplete="new-password"
                         placeholder="Ulangi kata sandi"></label>
-                <label class="cek-formulir"><input type="checkbox" required> Saya menyetujui Syarat Penggunaan dan
-                    Kebijakan Privasi A.I Check.</label>
+                <label class="cek-formulir"><input type="checkbox" name="terms" value="1" required>
+                    Saya menyetujui Syarat Penggunaan dan Kebijakan Privasi A.I-Check.</label>
+                <p class="auth-inline-notice is-error" id="auth-terms-error" role="alert" hidden>
+                    Anda harus menyetujui Syarat Penggunaan dan Kebijakan Privasi terlebih dahulu.
+                </p>
                 <button class="btn btn-primary btn-full" type="submit">Buat akun</button>
             </form>
 

@@ -127,6 +127,13 @@
     padding-right: 14px;
     padding-left: 14px;
 }
+.auth-field-help {
+    display: block;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
+}
 .auth-inline-notice {
     margin: 0;
     border-radius: var(--radius-md);
