@@ -10,23 +10,15 @@
 ## Local AI Image Checker
 
 The authenticated image-checker endpoint stores validated uploads on Laravel's
-private `image-analyses` disk and classifies them with the local model
-`dima806/ai_vs_human_generated_image_detection`. The Python code loads model
-files from `ai-service/model/`; image inference does not use Hugging Face
-Inference API credentials or send image contents to an external service.
+private `image-analyses` disk and sends them to the local detector configured
+by `services.ai_detector.url` (default: `http://127.0.0.1:8000`). Laravel
+expects a `POST /detect` response containing a result category (`AI-GENERATED`,
+`AI-EDITED`, `REAL`, or `UNCERTAIN`) and `p_ai` between 0 and 1.
 
-Laravel uses `App\Services\LocalAiDetector`. When
-`AI_WORKER_ENABLED=true`, it sends an authenticated server-to-server request
-to the local worker at `http://127.0.0.1:8765`. The worker must be started
-manually and uses the existing server-side `AI_WORKER_SECRET`. See
-[`ai-service/README.md`](ai-service/README.md) for setup and Windows commands.
-If the worker is disabled, Laravel uses the local Python subprocess. Subprocess
-fallback after a worker health-check failure is opt-in; worker inference errors
-do not start a second classifier.
-
-The result score is the model's softmax probability for the predicted class,
-not necessarily the probability that an image is AI-generated. It is not a
-calibrated measure or proof of image origin.
+Laravel persists `p_ai` in the existing `confidence_score` field and returns
+that field in its response for compatibility. In the interface it is shown as
+**Probabilitas AI**; it is an estimate, not the certainty or accuracy of the
+category. Detector results can be wrong and are not proof of an image's origin.
 
 ## About Laravel
 

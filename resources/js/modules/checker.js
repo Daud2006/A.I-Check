@@ -10,6 +10,8 @@ const namaFile = document.getElementById('nama-file');
 const ukuranFile = document.getElementById('ukuran-file');
 const tombolHapusGambar = document.getElementById('tombol-hapus-gambar');
 const tombolAnalisis = document.getElementById('tombol-analisis');
+const teksTombolAnalisis = document.getElementById('teks-tombol-analisis');
+const tombolUnggahBaru = document.getElementById('tombol-unggah-baru');
 const kemajuanAnalisis = document.getElementById('kemajuan-analisis');
 const isiKemajuan = document.getElementById('isi-kemajuan');
 const lajurProgres = document.querySelector('.lajur-progres[role="progressbar"]');
@@ -53,6 +55,7 @@ const tampilkanPesan = (pesan, { error = false, tautanLogin = false } = {}) => {
 
     if (!hasilAnalisis) return;
 
+    if (tombolUnggahBaru) tombolUnggahBaru.hidden = true;
     hasilAnalisis.replaceChildren();
     const pesanElement = document.createElement('p');
     pesanElement.className = error ? 'checker-message-error' : 'checker-message-success';
@@ -71,24 +74,109 @@ const tampilkanPesan = (pesan, { error = false, tautanLogin = false } = {}) => {
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;
     hasilAnalisis.hidden = false;
 };
-
 const tampilkanPrediksi = (payload) => {
-    const label = {
-        artificial: 'Cenderung dihasilkan oleh AI',
-        human: 'Cenderung dibuat manusia',
+    const hasil = {
+        'AI-GENERATED': {
+            interpretasi: 'Model memberi kategori AI-GENERATED. Ini merupakan indikasi dari prediksi model, bukan bukti independen bahwa gambar dibuat menggunakan AI.',
+            kelas: 'status-ai',
+        },
+        'AI-EDITED': {
+            interpretasi: 'Model memberi kategori AI-EDITED. Ini merupakan indikasi dari prediksi model, bukan bukti independen bahwa gambar telah diedit menggunakan AI.',
+            kelas: 'status-ai',
+        },
+        REAL: {
+            interpretasi: 'Model memberi kategori REAL. Prediksi ini tidak membuktikan bahwa gambar autentik atau tidak pernah dimanipulasi.',
+            kelas: 'status-real',
+        },
+        UNCERTAIN: {
+            interpretasi: 'Model memberi kategori UNCERTAIN, sehingga kategori gambar belum dapat ditentukan dari hasil prediksi ini.',
+            kelas: 'status-uncertain',
+        },
     }[payload.result_label];
-    const confidence = payload.confidence_score;
 
-    if (!label || typeof confidence !== 'number' || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    const scoreAI = payload.confidence_score;
+
+    if (
+        !hasil
+        || typeof scoreAI !== 'number'
+        || !Number.isFinite(scoreAI)
+        || scoreAI < 0
+        || scoreAI > 1
+    ) {
         tampilkanPesan('Hasil dari layanan analisis tidak dapat diverifikasi.', { error: true });
         return false;
     }
 
-    tampilkanPesan(`${label}. Skor model: ${(confidence * 100).toFixed(2)}%.`);
-    const catatan = document.createElement('p');
-    catatan.className = 'deskripsi-panel';
-    catatan.textContent = 'Prediksi model dapat keliru dan bukan bukti pasti. Hasil sebaiknya ditinjau bersama informasi lain.';
-    hasilAnalisis?.append(catatan);
+    if (pesanChecker) {
+        pesanChecker.textContent = '';
+        pesanChecker.hidden = true;
+        pesanChecker.classList.remove('is-error');
+    }
+
+    const heading = document.createElement('h2');
+    heading.className = 'judul-hasil-analisis';
+    heading.textContent = 'Hasil Deteksi';
+
+    const badge = document.createElement('span');
+    badge.className = `status-pill ${hasil.kelas}`;
+    badge.textContent = payload.result_label;
+
+    const skor = document.createElement('div');
+    skor.className = 'probabilitas-hasil';
+    const labelSkor = document.createElement('span');
+    labelSkor.textContent = 'Probabilitas AI';
+    const nilaiSkor = document.createElement('strong');
+    nilaiSkor.textContent = `${(scoreAI * 100).toFixed(2)}%`;
+    skor.append(labelSkor, nilaiSkor);
+
+    const judulKeterangan = document.createElement('h3');
+    judulKeterangan.className = 'judul-keterangan-analisis';
+    judulKeterangan.textContent = 'Keterangan Analisis';
+
+    const buatBagianKeterangan = (judul, isi) => {
+        const bagian = document.createElement('section');
+        bagian.className = 'bagian-keterangan-analisis';
+
+        const subjudul = document.createElement('h4');
+        subjudul.textContent = judul;
+
+        const keterangan = document.createElement('p');
+        keterangan.textContent = isi;
+
+        bagian.append(subjudul, keterangan);
+        return bagian;
+    };
+
+    const bagianHasilModel = buatBagianKeterangan(
+        'A. Hasil model',
+        `${payload.result_label} — Probabilitas AI ${nilaiSkor.textContent}.`,
+    );
+    const bagianBukti = buatBagianKeterangan(
+        'B. Bukti pendukung',
+        'Sistem saat ini tidak memeriksa metadata EXIF maupun Content Credentials (C2PA). Bukti metadata atau provenance belum diperiksa; ini tidak berarti informasi tersebut tidak ada pada gambar.',
+    );
+    const bagianInterpretasi = buatBagianKeterangan(
+        'C. Interpretasi',
+        hasil.interpretasi,
+    );
+    const bagianKeterbatasan = buatBagianKeterangan(
+        'D. Keterbatasan',
+        'Probabilitas AI adalah estimasi model, bukan tingkat kepastian atau akurasi hasil. Model dapat keliru; tanpa pemeriksaan metadata dan provenance, keduanya tidak dapat digunakan untuk menguatkan atau menyangkal prediksi ini.',
+    );
+
+    hasilAnalisis?.replaceChildren(
+        heading,
+        badge,
+        skor,
+        judulKeterangan,
+        bagianHasilModel,
+        bagianBukti,
+        bagianInterpretasi,
+        bagianKeterbatasan,
+    );
+    if (hasilAnalisis) hasilAnalisis.hidden = false;
+    if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;
+    if (tombolUnggahBaru) tombolUnggahBaru.hidden = false;
 
     return true;
 };
@@ -103,7 +191,13 @@ const aturStatusTombol = (unggahanSelesai = false) => {
     if (!tombolAnalisis) return;
 
     tombolAnalisis.disabled = unggahanBerlangsung || unggahanSelesai;
-    tombolAnalisis.textContent = unggahanSelesai ? 'Analisis Selesai' : 'Unggah Gambar';
+    if (teksTombolAnalisis) {
+        teksTombolAnalisis.textContent = unggahanSelesai
+            ? 'Analisis Selesai'
+            : fileTerpilih
+                ? 'Periksa'
+                : 'Unggah Gambar';
+    }
 };
 
 const resetPemeriksaan = () => {
@@ -128,6 +222,7 @@ const resetPemeriksaan = () => {
         hasilAnalisis.replaceChildren();
         hasilAnalisis.hidden = true;
     }
+    if (tombolUnggahBaru) tombolUnggahBaru.hidden = true;
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = false;
     elemenMarker.forEach((marker) => { marker.hidden = true; });
     aturProgres(0);
@@ -140,11 +235,13 @@ const pilihFile = (file) => {
     if (!file) return;
 
     if (!mimeDidukung.includes(file.type)) {
+        resetPemeriksaan();
         tampilkanPesan('Format gambar yang didukung adalah JPEG, PNG, dan WebP.', { error: true });
         return;
     }
 
     if (file.size > ukuranMaksimal) {
+        resetPemeriksaan();
         tampilkanPesan('Ukuran gambar maksimal 10 MB.', { error: true });
         return;
     }
@@ -163,6 +260,7 @@ const pilihFile = (file) => {
         hasilAnalisis.replaceChildren();
         hasilAnalisis.hidden = true;
     }
+    if (tombolUnggahBaru) tombolUnggahBaru.hidden = true;
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = false;
     aturStatusTombol();
     aturTampilanUpload(false);
@@ -204,7 +302,10 @@ const unggahGambar = () => {
     request.addEventListener('load', () => {
         let payload = {};
         try {
-            payload = JSON.parse(request.responseText);
+            const responsePayload = JSON.parse(request.responseText);
+            if (responsePayload && typeof responsePayload === 'object' && !Array.isArray(responsePayload)) {
+                payload = responsePayload;
+            }
         } catch {
             payload = {};
         }
@@ -249,6 +350,10 @@ tombolPilihGambar?.addEventListener('click', () => inputGambar?.click());
 inputGambar?.addEventListener('change', () => pilihFile(inputGambar.files?.[0]));
 tombolHapusGambar?.addEventListener('click', resetPemeriksaan);
 tombolAnalisis?.addEventListener('click', unggahGambar);
+tombolUnggahBaru?.addEventListener('click', () => {
+    resetPemeriksaan();
+    inputGambar?.click();
+});
 
 areaDropGambar?.addEventListener('dragover', (event) => {
     event.preventDefault();

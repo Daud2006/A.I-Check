@@ -24,7 +24,7 @@
                     <article class="about-feature">
                         @include('icon', ['name' => 'info'])
                         <h2>Hasil perlu ditinjau</h2>
-                        <p>Skor menunjukkan kelas yang dipilih model dan tidak menjamin kebenaran atau kepastian asal gambar.</p>
+                        <p>Probabilitas AI merupakan estimasi model yang ditampilkan terpisah dari kategori hasil, bukan jaminan kebenaran atau kepastian asal gambar.</p>
                     </article>
                 </div>
             </div>

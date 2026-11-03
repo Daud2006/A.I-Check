@@ -1,3 +1,4 @@
+
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
@@ -8,6 +9,7 @@ if (daftarRiwayat) {
     const urlHapus = daftarRiwayat.dataset.deleteUrl;
     const urlHapusSemua = daftarRiwayat.dataset.deleteAllUrl;
     const pencarianRiwayat = document.getElementById('pencarian-riwayat');
+    const tombolPencarianRiwayat = document.getElementById('tombol-pencarian-riwayat');
     const filterRiwayat = document.getElementById('filter-riwayat');
     const urutanRiwayat = document.getElementById('urutan-riwayat');
     const tombolHapusSemua = document.getElementById('tombol-hapus-riwayat');
@@ -17,42 +19,26 @@ if (daftarRiwayat) {
     let idRiwayatAktif = null;
     let sedangMenghapus = false;
 
-    const konfirmasiPenghapusan = async ({ title, text, confirmButtonText }) => {
-        if (sedangMenghapus) return false;
-
-        sedangMenghapus = true;
-        renderRiwayat();
-
-        try {
-            const result = await Swal.fire({
-                title,
-                text,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText,
-                cancelButtonText: 'Batal',
-                buttonsStyling: false,
-                reverseButtons: true,
-                focusCancel: true,
-                customClass: {
-                    popup: 'swal-riwayat-popup',
-                    title: 'swal-riwayat-title',
-                    htmlContainer: 'swal-riwayat-text',
-                    actions: 'swal-riwayat-actions',
-                    confirmButton: 'swal-riwayat-confirm',
-                    cancelButton: 'swal-riwayat-cancel',
-                },
-            });
-
-            if (result.isConfirmed) return true;
-        } catch {
-            tampilkanNotifikasi('error', 'Konfirmasi tidak dapat ditampilkan', 'Silakan coba kembali.');
+    // Mengubah skor menjadi angka yang valid.
+    // Mendukung angka maupun string desimal dari Laravel.
+    const skorNumerik = (item) => {
+        if (item.score === null || item.score === undefined || item.score === '') {
+            return null;
         }
 
-        sedangMenghapus = false;
-        renderRiwayat();
+        const score = Number(item.score);
 
-        return false;
+        return Number.isFinite(score) && score >= 0 && score <= 1
+            ? score
+            : null;
+    };
+
+    const nilaiSkor = (item) => {
+        const score = skorNumerik(item);
+
+        return score !== null
+            ? `${(score * 100).toFixed(2)}%`
+            : 'Tidak tersedia';
     };
 
     const tampilkanNotifikasi = (icon, title, text = '') => Swal.fire({
@@ -77,21 +63,23 @@ if (daftarRiwayat) {
     }[status] || 'Status tidak diketahui');
 
     const labelHasil = (item) => {
-        if (item.status !== 'completed') return pesanStatus(item.status);
-        if (item.label === 'artificial') return 'Cenderung dihasilkan AI';
-        if (item.label === 'human') return 'Cenderung dibuat manusia';
-        return 'Hasil tidak tersedia';
-    };
+        if (item.status !== 'completed') {
+            return pesanStatus(item.status);
+        }
 
-    const nilaiSkor = (item) =>
-        typeof item.score === 'number' && Number.isFinite(item.score)
-            ? `${(item.score * 100).toFixed(2)}%`
-            : 'Tidak tersedia';
+        return {
+            'AI-GENERATED': 'AI-GENERATED',
+            'AI-EDITED': 'AI-EDITED',
+            REAL: 'REAL',
+            UNCERTAIN: 'UNCERTAIN',
+        }[item.label] || 'Hasil tidak tersedia';
+    };
 
     const waktuAnalisis = (value) => {
         if (!value) return 'Waktu tidak tersedia';
 
         const date = new Date(value);
+
         return Number.isNaN(date.getTime())
             ? 'Waktu tidak tersedia'
             : new Intl.DateTimeFormat('id-ID', {
@@ -101,8 +89,26 @@ if (daftarRiwayat) {
     };
 
     const kelasStatus = (item) => {
-        if (item.status !== 'completed') return 'status-review';
-        return item.label === 'artificial' ? 'status-ai' : 'status-human';
+        if (item.status !== 'completed') {
+            return 'status-review';
+        }
+
+        if (
+            item.label === 'AI-GENERATED'
+            || item.label === 'AI-EDITED'
+        ) {
+            return 'status-ai';
+        }
+
+        if (item.label === 'REAL') {
+            return 'status-real';
+        }
+
+        if (item.label === 'UNCERTAIN') {
+            return 'status-uncertain';
+        }
+
+        return 'status-review';
     };
 
     const aturModalDetail = (terbuka) => {
@@ -150,6 +156,7 @@ if (daftarRiwayat) {
         svg.setAttribute('aria-hidden', 'true');
         svg.setAttribute('class', 'icon icon-sm');
         svg.setAttribute('viewBox', '0 0 24 24');
+
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', pathData);
         svg.append(path);
@@ -161,13 +168,18 @@ if (daftarRiwayat) {
     const buatKeadaanKosong = (title, message) => {
         const container = document.createElement('div');
         container.className = 'kosong-riwayat';
+
         const content = document.createElement('div');
+
         const heading = document.createElement('h2');
         heading.textContent = title;
+
         const description = document.createElement('p');
         description.textContent = message;
+
         content.append(heading, description);
         container.append(content);
+
         return container;
     };
 
@@ -175,17 +187,32 @@ if (daftarRiwayat) {
         idRiwayatAktif = item.id;
 
         document.getElementById('judul-detail-riwayat').textContent = item.name;
-        document.getElementById('label-hasil-detail').textContent = 'Hasil klasifikasi';
-        document.getElementById('nilai-ai-detail').textContent = item.status === 'completed'
-            ? (item.label === 'artificial' ? 'AI-generated' : 'Human')
-            : pesanStatus(item.status);
-        document.getElementById('nilai-manusia-detail').textContent = nilaiSkor(item);
-        document.getElementById('status-detail-riwayat').textContent = pesanStatus(item.status);
-        document.getElementById('tanggal-detail-riwayat').textContent = waktuAnalisis(item.date);
-        document.getElementById('id-detail-riwayat').textContent = `#${String(item.id).slice(-6)}`;
+
+        document.getElementById('label-hasil-detail').textContent =
+            'Hasil Deteksi';
+
+        document.getElementById('nilai-ai-detail').textContent =
+            item.status === 'completed'
+                ? labelHasil(item)
+                : pesanStatus(item.status);
+
+        document.getElementById('nilai-manusia-detail').textContent =
+            item.status === 'completed'
+                ? nilaiSkor(item)
+                : 'Tidak tersedia';
+
+        document.getElementById('status-detail-riwayat').textContent =
+            pesanStatus(item.status);
+
+        document.getElementById('tanggal-detail-riwayat').textContent =
+            waktuAnalisis(item.date);
+
+        document.getElementById('id-detail-riwayat').textContent =
+            `#${String(item.id).slice(-6)}`;
 
         const gambar = document.getElementById('gambar-detail-riwayat');
         const pesanGambar = document.getElementById('pesan-gambar-detail-riwayat');
+
         gambar.onerror = () => {
             gambar.removeAttribute('src');
             gambar.hidden = true;
@@ -211,8 +238,10 @@ if (daftarRiwayat) {
 
         const file = document.createElement('div');
         file.className = 'file-riwayat';
+
         const icon = document.createElement('span');
         icon.className = 'ikon-file-riwayat';
+
         if (item.imageUrl) {
             const thumbnail = document.createElement('img');
             thumbnail.src = item.imageUrl;
@@ -228,12 +257,16 @@ if (daftarRiwayat) {
 
         const metadata = document.createElement('div');
         metadata.style.minWidth = '0';
+
         const name = document.createElement('p');
         name.className = 'nama-file-riwayat';
         name.textContent = item.name;
+
         const date = document.createElement('p');
         date.className = 'tanggal-file-riwayat';
-        date.textContent = `${waktuAnalisis(item.date)} · ID #${String(item.id).slice(-6)}`;
+        date.textContent =
+            `${waktuAnalisis(item.date)} · ID #${String(item.id).slice(-6)}`;
+
         metadata.append(name, date);
         file.append(icon, metadata);
 
@@ -242,31 +275,41 @@ if (daftarRiwayat) {
         result.textContent = labelHasil(item);
 
         const scoreContainer = document.createElement('div');
+
         const scoreHeading = document.createElement('div');
         scoreHeading.className = 'kepala-skor-riwayat';
+
         const scoreLabel = document.createElement('span');
         scoreLabel.style.color = '#94a3b8';
-        scoreLabel.textContent = 'Skor model';
+        scoreLabel.textContent = 'Probabilitas AI';
+
         const scoreValue = document.createElement('strong');
         scoreValue.textContent = nilaiSkor(item);
+
         scoreHeading.append(scoreLabel, scoreValue);
+
         const track = document.createElement('div');
         track.className = 'lajur-skor-riwayat';
+
         const fill = document.createElement('div');
         fill.className = 'isi-skor-riwayat';
-        const score = typeof item.score === 'number' ? Math.max(0, Math.min(1, item.score)) : 0;
+
+        const score = skorNumerik(item) ?? 0;
         fill.style.width = `${score * 100}%`;
+
         track.append(fill);
         scoreContainer.append(scoreHeading, track);
 
         const actions = document.createElement('div');
         actions.className = 'aksi-riwayat';
+
         const viewButton = buatTombolIkon(
             'tombol-lihat-detail',
             'Lihat detail',
             `Lihat detail ${item.name}`,
             'M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z',
         );
+
         viewButton.addEventListener('click', () => bukaDetailRiwayat(item));
 
         const deleteButton = buatTombolIkon(
@@ -275,40 +318,110 @@ if (daftarRiwayat) {
             `Hapus ${item.name}`,
             'M4 7h16M9 7V4h6v3m3 0l-1 14H7L6 7M10 11v6m4-6v6',
         );
+
         deleteButton.disabled = sedangMenghapus;
         deleteButton.addEventListener('click', () => hapusSatu(item));
+
         actions.append(viewButton, deleteButton);
 
         row.append(file, result, scoreContainer, actions);
+
         return row;
     };
 
     const renderRiwayat = () => {
-        const keyword = (pencarianRiwayat?.value || '').trim().toLocaleLowerCase('id-ID');
+        const keyword = (pencarianRiwayat?.value || '')
+            .trim()
+            .toLocaleLowerCase('id-ID');
+
         const filtered = riwayat
-            .filter((item) => String(item.name || '').toLocaleLowerCase('id-ID').includes(keyword))
             .filter((item) => {
-                if (!filterRiwayat || filterRiwayat.value === 'all') return true;
-                if (filterRiwayat.value === 'ai') return item.status === 'completed' && item.label === 'artificial';
-                if (filterRiwayat.value === 'human') return item.status === 'completed' && item.label === 'human';
-                return item.status !== 'completed';
+                const searchableText = [
+                    item.name,
+                    item.label,
+                    item.id,
+                ]
+                    .filter((value) => value !== null && value !== undefined)
+                    .join(' ')
+                    .toLocaleLowerCase('id-ID');
+
+                return searchableText.includes(keyword);
+            })
+            .filter((item) => {
+                if (!filterRiwayat || filterRiwayat.value === 'all') {
+                    return true;
+                }
+
+                if (item.status !== 'completed') {
+                    return filterRiwayat.value === 'review';
+                }
+
+                if (filterRiwayat.value === 'ai') {
+                    return (
+                        item.label === 'AI-GENERATED'
+                        || item.label === 'AI-EDITED'
+                    );
+                }
+
+                if (filterRiwayat.value === 'ai-generated') {
+                    return item.label === 'AI-GENERATED';
+                }
+
+                if (filterRiwayat.value === 'ai-edited') {
+                    return item.label === 'AI-EDITED';
+                }
+
+                if (filterRiwayat.value === 'real') {
+                    return item.label === 'REAL';
+                }
+
+                if (filterRiwayat.value === 'uncertain') {
+                    return item.label === 'UNCERTAIN';
+                }
+
+                return false;
             });
 
         filtered.sort((a, b) => {
-            if (urutanRiwayat?.value === 'highest') return (b.score ?? -1) - (a.score ?? -1);
-            if (urutanRiwayat?.value === 'lowest') return (a.score ?? 2) - (b.score ?? 2);
+            const scoreA = skorNumerik(a);
+            const scoreB = skorNumerik(b);
+
+            if (urutanRiwayat?.value === 'highest') {
+                return (scoreB ?? -1) - (scoreA ?? -1);
+            }
+
+            if (urutanRiwayat?.value === 'lowest') {
+                return (scoreA ?? 2) - (scoreB ?? 2);
+            }
+
             return Number(b.id) - Number(a.id);
         });
 
-        const completed = riwayat.filter((item) => item.status === 'completed' && typeof item.score === 'number');
+        const completed = riwayat
+            .filter((item) => item.status === 'completed')
+            .map(skorNumerik)
+            .filter((score) => score !== null);
+
         const average = completed.length
-            ? completed.reduce((sum, item) => sum + item.score, 0) / completed.length
+            ? completed.reduce((sum, score) => sum + score, 0) / completed.length
             : 0;
-        document.getElementById('total-analisis').textContent = String(riwayat.length);
+
+        document.getElementById('total-analisis').textContent =
+            String(riwayat.length);
+
         document.getElementById('analisis-ai').textContent = String(
-            riwayat.filter((item) => item.status === 'completed' && item.label === 'artificial').length,
+            riwayat.filter((item) =>
+                item.status === 'completed'
+                && (
+                    item.label === 'AI-GENERATED'
+                    || item.label === 'AI-EDITED'
+                ),
+            ).length,
         );
-        document.getElementById('rata-rata-skor').textContent = `${(average * 100).toFixed(2)}%`;
+
+        document.getElementById('rata-rata-skor').textContent =
+            `${(average * 100).toFixed(2)}%`;
+
         if (tombolHapusSemua) {
             tombolHapusSemua.disabled = sedangMenghapus;
         }
@@ -317,17 +430,69 @@ if (daftarRiwayat) {
 
         if (!filtered.length) {
             const empty = riwayat.length
-                ? buatKeadaanKosong('Riwayat tidak ditemukan', 'Coba ubah kata kunci atau filter.')
-                : buatKeadaanKosong('Belum ada riwayat', 'Hasil analisis Anda akan muncul di sini.');
+                ? buatKeadaanKosong(
+                    'Riwayat tidak ditemukan',
+                    'Coba ubah kata kunci atau filter.',
+                )
+                : buatKeadaanKosong(
+                    'Belum ada riwayat',
+                    'Hasil analisis Anda akan muncul di sini.',
+                );
+
             daftarRiwayat.append(empty);
             return;
         }
 
-        filtered.forEach((item) => daftarRiwayat.append(buatBarisRiwayat(item)));
+        filtered.forEach((item) => {
+            daftarRiwayat.append(buatBarisRiwayat(item));
+        });
+    };
+
+    const konfirmasiPenghapusan = async ({ title, text, confirmButtonText }) => {
+        if (sedangMenghapus) return false;
+
+        sedangMenghapus = true;
+        renderRiwayat();
+
+        try {
+            const result = await Swal.fire({
+                title,
+                text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText,
+                cancelButtonText: 'Batal',
+                buttonsStyling: false,
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'swal-riwayat-popup',
+                    title: 'swal-riwayat-title',
+                    htmlContainer: 'swal-riwayat-text',
+                    actions: 'swal-riwayat-actions',
+                    confirmButton: 'swal-riwayat-confirm',
+                    cancelButton: 'swal-riwayat-cancel',
+                },
+            });
+
+            if (result.isConfirmed) return true;
+        } catch {
+            tampilkanNotifikasi(
+                'error',
+                'Konfirmasi tidak dapat ditampilkan',
+                'Silakan coba kembali.',
+            );
+        }
+
+        sedangMenghapus = false;
+        renderRiwayat();
+
+        return false;
     };
 
     const hapusRequest = async (url) => {
         let response;
+
         try {
             response = await fetch(url, {
                 method: 'DELETE',
@@ -338,42 +503,66 @@ if (daftarRiwayat) {
                 },
             });
         } catch {
-            throw new Error('Terjadi kesalahan saat mengirim permintaan penghapusan. Periksa koneksi Anda lalu coba kembali.');
+            throw new Error(
+                'Terjadi kesalahan saat mengirim permintaan penghapusan. Periksa koneksi Anda lalu coba kembali.',
+            );
         }
 
         let payload = {};
+
         try {
             payload = await response.json();
         } catch {
             payload = {};
         }
+
         if (!response.ok) {
-            throw new Error(payload.message || 'Riwayat belum dapat dihapus. Silakan coba kembali.');
+            throw new Error(
+                payload.message
+                || 'Riwayat belum dapat dihapus. Silakan coba kembali.',
+            );
         }
+
         return payload;
     };
 
     const hapusSatu = async (item) => {
         if (sedangMenghapus || !urlHapus) return;
+
         const dikonfirmasi = await konfirmasiPenghapusan({
             title: 'Hapus Riwayat Ini?',
             text: 'Apakah kamu yakin ingin menghapus riwayat analisis ini? Tindakan ini tidak dapat dibatalkan.',
             confirmButtonText: 'Ya, Hapus',
         });
+
         if (!dikonfirmasi) return;
 
         try {
-            const payload = await hapusRequest(urlHapus.replace('__ID__', encodeURIComponent(item.id)));
+            const payload = await hapusRequest(
+                urlHapus.replace('__ID__', encodeURIComponent(item.id)),
+            );
+
             riwayat = riwayat.filter((entry) => entry.id !== item.id);
-            if (idRiwayatAktif === item.id) aturModalDetail(false);
+
+            if (idRiwayatAktif === item.id) {
+                aturModalDetail(false);
+            }
+
             renderRiwayat();
+
             tampilkanNotifikasi(
                 payload.cleanup_complete === false ? 'warning' : 'success',
-                payload.cleanup_complete === false ? 'Riwayat dihapus, file belum dibersihkan' : 'Riwayat berhasil dihapus',
+                payload.cleanup_complete === false
+                    ? 'Riwayat dihapus, file belum dibersihkan'
+                    : 'Riwayat berhasil dihapus',
                 payload.message || '',
             );
         } catch (error) {
-            tampilkanNotifikasi('error', 'Penghapusan gagal', error.message);
+            tampilkanNotifikasi(
+                'error',
+                'Penghapusan gagal',
+                error.message,
+            );
         } finally {
             sedangMenghapus = false;
             renderRiwayat();
@@ -398,6 +587,7 @@ if (daftarRiwayat) {
                     confirmButton: 'swal-riwayat-info-confirm',
                 },
             });
+
             return;
         }
 
@@ -406,53 +596,83 @@ if (daftarRiwayat) {
             text: 'Apakah kamu yakin ingin menghapus seluruh riwayat analisis? Tindakan ini tidak dapat dibatalkan.',
             confirmButtonText: 'Ya, Hapus Semua',
         });
+
         if (!dikonfirmasi) return;
 
         try {
             const payload = await hapusRequest(urlHapusSemua);
+
             riwayat = [];
             idRiwayatAktif = null;
+
             aturModalDetail(false);
             renderRiwayat();
+
             tampilkanNotifikasi(
                 payload.cleanup_complete === false ? 'warning' : 'success',
-                payload.cleanup_complete === false ? 'Riwayat dihapus, beberapa file belum dibersihkan' : 'Semua riwayat berhasil dihapus',
+                payload.cleanup_complete === false
+                    ? 'Riwayat dihapus, beberapa file belum dibersihkan'
+                    : 'Semua riwayat berhasil dihapus',
                 payload.message || '',
             );
         } catch (error) {
-            tampilkanNotifikasi('error', 'Penghapusan gagal', error.message);
+            tampilkanNotifikasi(
+                'error',
+                'Penghapusan gagal',
+                error.message,
+            );
         } finally {
             sedangMenghapus = false;
             renderRiwayat();
         }
     });
 
-    [pencarianRiwayat, filterRiwayat, urutanRiwayat].forEach((element) =>
-        element?.addEventListener('input', renderRiwayat),
-    );
+    [pencarianRiwayat, filterRiwayat, urutanRiwayat].forEach((element) => {
+        element?.addEventListener('input', renderRiwayat);
+    });
+
+    tombolPencarianRiwayat?.addEventListener('click', () => {
+        pencarianRiwayat?.focus();
+    });
+
     filterRiwayat?.addEventListener('change', renderRiwayat);
     urutanRiwayat?.addEventListener('change', renderRiwayat);
 
-    document.getElementById('tombol-tutup-detail')?.addEventListener('click', () => aturModalDetail(false));
+    document.getElementById('tombol-tutup-detail')?.addEventListener(
+        'click',
+        () => aturModalDetail(false),
+    );
+
     modalDetailRiwayat?.addEventListener('mousedown', (event) => {
-        if (event.target === event.currentTarget) aturModalDetail(false);
+        if (event.target === event.currentTarget) {
+            aturModalDetail(false);
+        }
     });
 
     document.getElementById('tombol-simpan-laporan')?.addEventListener('click', () => {
         if (idRiwayatAktif === null) return;
-        const cleanup = () => document.body.classList.remove('cetak-laporan-riwayat');
+
+        const cleanup = () =>
+            document.body.classList.remove('cetak-laporan-riwayat');
+
         window.addEventListener('afterprint', cleanup, { once: true });
+
         document.body.classList.add('cetak-laporan-riwayat');
         window.print();
     });
 
     try {
         const parsed = JSON.parse(daftarRiwayat.dataset.analyses || '[]');
+
         riwayat = Array.isArray(parsed) ? parsed : [];
+
         renderRiwayat();
     } catch {
         daftarRiwayat.replaceChildren(
-            buatKeadaanKosong('Riwayat belum dapat dimuat', 'Muat ulang halaman untuk mencoba kembali.'),
+            buatKeadaanKosong(
+                'Riwayat belum dapat dimuat',
+                'Muat ulang halaman untuk mencoba kembali.',
+            ),
         );
     }
 }

@@ -51,4 +51,10 @@ return [
         'subprocess_fallback' => env('AI_WORKER_SUBPROCESS_FALLBACK', false),
     ],
 
+    'ai_detector' => [
+    'url' => env('AI_DETECTOR_URL', 'http://127.0.0.1:8000'),
+    'connect_timeout' => env('AI_DETECTOR_CONNECT_TIMEOUT', 5),
+    'timeout' => env('AI_DETECTOR_TIMEOUT', 65),
+    ],
+
 ];

@@ -15,9 +15,13 @@
     background: #fffbeb;
     color: #d97706;
 }
-.status-human {
+.status-real {
     background: #eff6ff;
     color: #1d4ed8;
+}
+.status-uncertain {
+    background: #fffbeb;
+    color: #92400e;
 }
 .progress-track {
     height: 8px;

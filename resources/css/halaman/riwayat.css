@@ -51,8 +51,9 @@
     font-size: 12px;
 }
 .filter-riwayat {
-    display: flex;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr));
+    gap: 16px;
     margin-top: 24px;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -60,18 +61,68 @@
     padding: 16px;
     box-shadow: var(--shadow-card);
 }
+.filter-riwayat > .form-control {
+    min-width: 0;
+}
 .pencarian-riwayat {
     position: relative;
-    flex: 1;
+    min-width: 0;
 }
-.pencarian-riwayat .icon {
+.tombol-pencarian-riwayat {
     position: absolute;
+    z-index: 1;
     left: 12px;
-    top: 11px;
+    top: 50%;
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
     color: #94a3b8;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+.tombol-pencarian-riwayat:hover,
+.tombol-pencarian-riwayat:focus-visible {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+.tombol-pencarian-riwayat:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
 }
 .pencarian-riwayat .form-control {
-    padding-left: 40px;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 16px 12px 44px;
+    background-color: #fff;
+    color: #10243e;
+    caret-color: #10243e;
+    opacity: 1;
+    visibility: visible;
+    -webkit-text-fill-color: #10243e;
+}
+.pencarian-riwayat .form-control::placeholder {
+    color: #64748b;
+    opacity: 1;
+    -webkit-text-fill-color: #64748b;
+}
+.pencarian-riwayat .form-control:focus {
+    border-color: #2563eb;
+    background-color: #fff;
+    color: #10243e;
+    caret-color: #10243e;
+    opacity: 1;
+    visibility: visible;
+    -webkit-text-fill-color: #10243e;
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}
+.pencarian-riwayat .form-control::-webkit-search-cancel-button {
+    cursor: pointer;
 }
 .daftar-riwayat {
     margin-top: 16px;
@@ -317,6 +368,12 @@
         justify-content: flex-start;
     }
 }
+@media (max-width: 760px) {
+    .filter-riwayat {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+}
 @media (max-width: 700px) {
     .kepala-halaman-riwayat {
         align-items: flex-start;
@@ -324,9 +381,6 @@
     }
     .kartu-statistik-riwayat {
         grid-template-columns: 1fr;
-    }
-    .filter-riwayat {
-        flex-direction: column;
     }
     .kepala-halaman-riwayat .btn {
         width: 100%;
