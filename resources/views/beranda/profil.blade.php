@@ -31,14 +31,26 @@
                         <input class="form-control" name="name" value="{{ old('name', auth()->user()->name) }}"
                             required minlength="3" maxlength="255" autocomplete="name">
                     </label>
-                    <label class="form-field">
-                        <span class="form-label">Email</span>
-                        <input class="form-control" type="email" name="email"
-                            value="{{ old('email', auth()->user()->email) }}" required maxlength="255"
-                            autocomplete="email">
-                    </label>
                     <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                 </form>
+
+                <section class="profile-account-info" aria-labelledby="profile-account-title">
+                    <h2 class="profile-section-title" id="profile-account-title">Informasi Akun</h2>
+                    <dl class="profile-account-list">
+                        <div class="profile-account-row">
+                            <dt>Email</dt>
+                            <dd>{{ auth()->user()->email }}</dd>
+                        </div>
+                        <div class="profile-account-row">
+                            <dt>Status akun</dt>
+                            <dd>
+                                <span class="profile-account-badge {{ $accountType === 'Premium' ? 'is-premium' : 'is-free' }}">
+                                    {{ $accountType }}
+                                </span>
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
             </div>
         </div>
     </section>

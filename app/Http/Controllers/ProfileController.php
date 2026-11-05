@@ -3,15 +3,35 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
 {
     // Menampilkan halaman profil.
-    public function index(): View
+    public function index(Request $request): View
     {
-        return view('beranda.profil');
+        $user = $request->user();
+        $now = now();
+
+        $hasPremiumAccess = $user->subscriptions()
+            ->where('status', 'active')
+            ->whereNull('cancelled_at')
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+            })
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+            })
+            ->whereHas('plan', function (Builder $query): void {
+                $query->where('is_active', true)->where('price', '>', 0);
+            })
+            ->exists();
+
+        return view('beranda.profil', [
+            'accountType' => $hasPremiumAccess ? 'Premium' : 'Free',
+        ]);
     }
 
     public function update(Request $request): RedirectResponse
@@ -20,22 +40,16 @@ class ProfileController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'min:3', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'email' => ['prohibited'],
         ], [
             'name.required' => 'Nama wajib diisi.',
             'name.min' => 'Nama minimal 3 karakter.',
             'name.max' => 'Nama maksimal 255 karakter.',
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Masukkan alamat email yang valid.',
-            'email.max' => 'Email maksimal 255 karakter.',
-            'email.unique' => 'Email tersebut sudah digunakan akun lain.',
+            'email.prohibited' => 'Email tidak dapat diubah melalui pengaturan profil.',
         ]);
 
-        if ($validated['email'] !== $user->email) {
-            $user->email_verified_at = null;
-        }
-
-        $user->fill($validated)->save();
+        $user->name = $validated['name'];
+        $user->save();
 
         return redirect()->route('profile')->with('status', 'Profil berhasil diperbarui.');
     }

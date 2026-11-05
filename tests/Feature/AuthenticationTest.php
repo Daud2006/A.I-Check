@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -174,54 +176,127 @@ class AuthenticationTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_profile_displays_and_updates_only_the_authenticated_users_name_and_email(): void
+    public function test_profile_displays_email_as_read_only_and_updates_only_the_authenticated_users_name(): void
     {
         $user = User::factory()->create([
             'name' => 'Nama Lama',
             'email' => 'lama@example.test',
         ]);
+        $otherUser = User::factory()->create([
+            'name' => 'Pengguna Lain',
+            'email' => 'lain@example.test',
+        ]);
 
-        $this->actingAs($user)
-            ->get(route('profile'))
-            ->assertOk()
+        $profileResponse = $this->actingAs($user)->get(route('profile'));
+        $profileResponse->assertOk()
             ->assertSee('Nama Lama')
             ->assertSee('lama@example.test');
+
+        $profileView = file_get_contents(resource_path('views/beranda/profil.blade.php'));
+        $this->assertIsString($profileView);
+        $this->assertStringNotContainsString('name="email"', $profileView);
 
         $this->put(route('profile.update'), [
             'name' => 'Nama Baru',
             'email' => 'baru@example.test',
             'role' => 'admin',
-        ])->assertRedirect(route('profile'));
+        ])->assertRedirect(route('profile'))
+            ->assertSessionHasErrors(['email']);
+
+        $this->assertSame('Nama Lama', $user->fresh()->name);
+        $this->assertSame('lama@example.test', $user->fresh()->email);
+
+        $this->put(route('profile.update'), [
+            'name' => 'Nama Baru',
+            'role' => 'admin',
+        ])->assertRedirect(route('profile'))
+            ->assertSessionHas('status', 'Profil berhasil diperbarui.');
 
         $this->assertSame('Nama Baru', $user->fresh()->name);
-        $this->assertSame('baru@example.test', $user->fresh()->email);
+        $this->assertSame('lama@example.test', $user->fresh()->email);
         $this->assertSame('user', $user->fresh()->role);
+        $this->assertSame('Pengguna Lain', $otherUser->fresh()->name);
+        $this->assertSame('lain@example.test', $otherUser->fresh()->email);
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee('value="Nama Baru"', false);
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Nama Baru');
     }
 
-    public function test_profile_rejects_invalid_and_duplicate_values(): void
+    public function test_profile_rejects_invalid_names_without_changing_the_account(): void
     {
         $user = User::factory()->create([
             'name' => 'Nama Lama',
-            'email' => 'lama@example.test',
         ]);
-        User::factory()->create(['email' => 'sudah-ada@example.test']);
 
         $this->actingAs($user)
             ->from(route('profile'))
             ->put(route('profile.update'), [
                 'name' => '',
-                'email' => 'sudah-ada@example.test',
-                'password' => 'new-password',
-                'role' => 'admin',
             ])->assertRedirect(route('profile'))
-            ->assertSessionHasErrors(['name', 'email']);
+            ->assertSessionHasErrors(['name']);
 
         $this->assertSame('Nama Lama', $user->fresh()->name);
-        $this->assertSame('lama@example.test', $user->fresh()->email);
         $this->assertSame('user', $user->fresh()->role);
 
         $this->get(route('profile'))
             ->assertSee('data-auth-open-on-load="false"', false)
             ->assertSee('Nama wajib diisi.');
+    }
+
+    public function test_profile_displays_premium_only_for_a_current_active_paid_subscription(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::query()->create([
+            'name' => 'Premium',
+            'slug' => 'premium',
+            'price' => 29000,
+            'currency' => 'IDR',
+            'billing_interval' => 'monthly',
+            'is_active' => true,
+        ]);
+        $subscription = new Subscription([
+            'plan_id' => $plan->id,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+        ]);
+        $subscription->status = 'active';
+        $user->subscriptions()->save($subscription);
+
+        $this->actingAs($user)
+            ->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Premium')
+            ->assertSee('profile-account-badge is-premium', false);
+    }
+
+    public function test_profile_displays_free_for_an_inactive_or_unpaid_subscription(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::query()->create([
+            'name' => 'Premium',
+            'slug' => 'premium',
+            'price' => 29000,
+            'currency' => 'IDR',
+            'billing_interval' => 'monthly',
+            'is_active' => true,
+        ]);
+        $subscription = new Subscription([
+            'plan_id' => $plan->id,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+        ]);
+        $subscription->status = 'pending';
+        $user->subscriptions()->save($subscription);
+
+        $this->actingAs($user)
+            ->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Free')
+            ->assertSee('profile-account-badge is-free', false)
+            ->assertDontSee('profile-account-badge is-premium', false);
     }
 }
