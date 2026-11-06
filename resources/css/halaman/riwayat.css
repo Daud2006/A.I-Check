@@ -51,8 +51,9 @@
     font-size: 12px;
 }
 .filter-riwayat {
-    display: flex;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr));
+    gap: 16px;
     margin-top: 24px;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -60,18 +61,68 @@
     padding: 16px;
     box-shadow: var(--shadow-card);
 }
+.filter-riwayat > .form-control {
+    min-width: 0;
+}
 .pencarian-riwayat {
     position: relative;
-    flex: 1;
+    min-width: 0;
 }
-.pencarian-riwayat .icon {
+.tombol-pencarian-riwayat {
     position: absolute;
+    z-index: 1;
     left: 12px;
-    top: 11px;
+    top: 50%;
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
     color: #94a3b8;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+.tombol-pencarian-riwayat:hover,
+.tombol-pencarian-riwayat:focus-visible {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+.tombol-pencarian-riwayat:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
 }
 .pencarian-riwayat .form-control {
-    padding-left: 40px;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 16px 12px 44px;
+    background-color: #fff;
+    color: #10243e;
+    caret-color: #10243e;
+    opacity: 1;
+    visibility: visible;
+    -webkit-text-fill-color: #10243e;
+}
+.pencarian-riwayat .form-control::placeholder {
+    color: #64748b;
+    opacity: 1;
+    -webkit-text-fill-color: #64748b;
+}
+.pencarian-riwayat .form-control:focus {
+    border-color: #2563eb;
+    background-color: #fff;
+    color: #10243e;
+    caret-color: #10243e;
+    opacity: 1;
+    visibility: visible;
+    -webkit-text-fill-color: #10243e;
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}
+.pencarian-riwayat .form-control::-webkit-search-cancel-button {
+    cursor: pointer;
 }
 .daftar-riwayat {
     margin-top: 16px;
@@ -317,6 +368,12 @@
         justify-content: flex-start;
     }
 }
+@media (max-width: 760px) {
+    .filter-riwayat {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+}
 @media (max-width: 700px) {
     .kepala-halaman-riwayat {
         align-items: flex-start;
@@ -324,9 +381,6 @@
     }
     .kartu-statistik-riwayat {
         grid-template-columns: 1fr;
-    }
-    .filter-riwayat {
-        flex-direction: column;
     }
     .kepala-halaman-riwayat .btn {
         width: 100%;
@@ -471,5 +525,121 @@
 
     body.cetak-laporan-riwayat {
         background: #fff !important;
+    }
+}
+
+.swal2-popup.swal-riwayat-popup {
+    width: min(calc(100vw - 32px), 29rem);
+    border-radius: 16px;
+    padding: 1.75rem;
+    font-family: inherit;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.2);
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-title {
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-text {
+    color: #475569;
+    font-size: 0.925rem;
+    line-height: 1.6;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-actions {
+    width: 100%;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-confirm,
+.swal2-popup.swal-riwayat-popup .swal-riwayat-cancel,
+.swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm {
+    min-height: 44px;
+    margin: 0;
+    border: 0;
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: background-color 140ms ease, transform 140ms ease;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-confirm {
+    background: #dc2626;
+    color: #fff;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-confirm:hover {
+    background: #b91c1c;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-cancel {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-cancel:hover {
+    background: #cbd5e1;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm {
+    background: #2563eb;
+    color: #fff;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm:hover {
+    background: #1d4ed8;
+}
+
+.swal2-popup.swal-riwayat-popup .swal-riwayat-confirm:focus-visible,
+.swal2-popup.swal-riwayat-popup .swal-riwayat-cancel:focus-visible,
+.swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.35);
+    outline-offset: 2px;
+}
+
+.swal2-popup.swal-riwayat-toast {
+    width: min(calc(100vw - 32px), 27rem);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    font-family: inherit;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.16);
+}
+
+.swal-riwayat-toast .swal2-title {
+    color: #0f172a;
+    font-size: 0.925rem;
+    font-weight: 700;
+}
+
+.swal-riwayat-toast .swal2-html-container {
+    margin: 0.25rem 0 0;
+    color: #475569;
+    font-size: 0.825rem;
+    line-height: 1.5;
+}
+
+#tombol-hapus-riwayat:disabled {
+    cursor: wait;
+    opacity: 0.55;
+}
+
+@media (max-width: 480px) {
+    .swal2-popup.swal-riwayat-popup {
+        width: calc(100vw - 24px);
+        padding: 1.25rem;
+    }
+
+    .swal2-popup.swal-riwayat-popup .swal-riwayat-actions {
+        flex-direction: column-reverse;
+    }
+
+    .swal2-popup.swal-riwayat-popup .swal-riwayat-confirm,
+    .swal2-popup.swal-riwayat-popup .swal-riwayat-cancel,
+    .swal2-popup.swal-riwayat-popup .swal-riwayat-info-confirm {
+        width: 100%;
     }
 }

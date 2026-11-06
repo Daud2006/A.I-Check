@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body>
+<body data-logout-success="{{ session()->pull('logout_success', false) ? 'true' : 'false' }}">
     <div class="kerangka-situs">
         {{-- Header --}}
         <header class="bagian-header">
@@ -40,7 +40,7 @@
 
                     @auth
                     <a href="{{ route('profile') }}" class="btn btn-secondary">{{ auth()->user()->name }}</a>
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form method="POST" action="{{ route('logout') }}" data-confirm-logout>
                         @csrf
                         <button type="submit" class="btn btn-primary">Keluar</button>
                     </form>
@@ -71,7 +71,7 @@
 
                 @auth
                 <a href="{{ route('profile') }}" class="btn btn-secondary btn-full">Profil</a>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" data-confirm-logout>
                     @csrf
                     <button type="submit" class="btn btn-primary btn-full">Keluar</button>
                 </form>
@@ -131,8 +131,8 @@
                 </label>
                 <div class="baris-formulir">
                     <label class="cek-formulir"><input type="checkbox" name="remember" value="1"> Ingat saya</label>
-                    <button type="button" class="tautan-formulir" style="border:0;background:none;">Lupa kata
-                        sandi?</button>
+                    <button type="button" class="tautan-formulir" style="border:0;background:none;"
+                        data-auth-mode="forgot">Lupa kata sandi?</button>
                 </div>
                 <button class="btn btn-primary btn-full" type="submit">Masuk</button>
             </form>
@@ -148,7 +148,9 @@
                         placeholder="Masukkan nama lengkap"></label>
                 <label class="kolom-formulir"><span class="label-formulir">Alamat email</span><input
                         class="form-control" type="email" name="email" value="{{ old('email') }}" required
-                        autocomplete="email" placeholder="nama@email.com"></label>
+                        autocomplete="email" placeholder="nama@email.com">
+                    <small class="auth-field-help">Gunakan alamat email yang benar, aktif, dan dapat Anda akses. Email ini akan digunakan untuk pemulihan akun jika Anda lupa password.</small>
+                </label>
                 <label class="kolom-formulir"><span class="label-formulir">Kata sandi</span><input class="form-control"
                         type="password" name="password" required minlength="8" autocomplete="new-password"
                         placeholder="Minimal 8 karakter"></label>
@@ -156,9 +158,44 @@
                         class="form-control" type="password" name="password_confirmation" required minlength="8"
                         autocomplete="new-password"
                         placeholder="Ulangi kata sandi"></label>
-                <label class="cek-formulir"><input type="checkbox" required> Saya menyetujui Syarat Penggunaan dan
-                    Kebijakan Privasi A.I Check.</label>
+                <label class="cek-formulir"><input type="checkbox" name="terms" value="1" required>
+                    Saya menyetujui Syarat Penggunaan dan Kebijakan Privasi A.I-Check.</label>
+                <p class="auth-inline-notice is-error" id="auth-terms-error" role="alert" hidden>
+                    Anda harus menyetujui Syarat Penggunaan dan Kebijakan Privasi terlebih dahulu.
+                </p>
                 <button class="btn btn-primary btn-full" type="submit">Buat akun</button>
+            </form>
+
+            <form class="formulir-otorisasi" id="formulir-lupa-password"
+                data-send-otp-url="{{ route('password.otp.send') }}"
+                data-reset-password-url="{{ route('password.otp.reset') }}" hidden>
+                <label class="kolom-formulir">
+                    <span class="label-formulir">Email</span>
+                    <div class="baris-email-otp">
+                        <input class="form-control" type="email" name="email" required maxlength="255"
+                            autocomplete="email" placeholder="nama@email.com">
+                        <button class="btn btn-secondary" type="button" data-auth-send-otp>Kirim OTP</button>
+                    </div>
+                </label>
+                <label class="kolom-formulir">
+                    <span class="label-formulir">OTP</span>
+                    <input class="form-control" type="text" name="otp" required maxlength="64"
+                        autocomplete="one-time-code" autocapitalize="none" spellcheck="false"
+                        placeholder="Masukkan kode OTP dari email">
+                </label>
+                <label class="kolom-formulir">
+                    <span class="label-formulir">Password Baru</span>
+                    <input class="form-control" type="password" name="password" required minlength="8"
+                        autocomplete="new-password"
+                        placeholder="Masukkan password baru">
+                </label>
+                <label class="kolom-formulir">
+                    <span class="label-formulir">Konfirmasi Password Baru</span>
+                    <input class="form-control" type="password" name="password_confirmation" required minlength="8"
+                        autocomplete="new-password" placeholder="Ulangi password baru">
+                </label>
+                <p class="auth-inline-notice" id="auth-reset-notice" role="status" aria-live="polite" hidden></p>
+                <button class="btn btn-primary btn-full" type="submit" data-auth-reset-password>Ubah</button>
             </form>
 
             <div class="bagian-bawah-modal">

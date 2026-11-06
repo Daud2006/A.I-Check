@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -13,11 +16,14 @@ class AuthenticationTest extends TestCase
 
     public function test_registration_creates_a_hashed_regular_user_and_authenticates_them(): void
     {
+        Notification::fake();
+
         $response = $this->post(route('register'), [
             'name' => 'Contoh Pengguna',
             'email' => 'contoh@example.test',
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
+            'terms' => '1',
             'role' => 'admin',
         ]);
 
@@ -27,6 +33,38 @@ class AuthenticationTest extends TestCase
         $this->assertSame('user', $user->role);
         $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('home'));
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => 'contoh@example.test']);
+        Notification::assertNothingSent();
+    }
+
+    public function test_registration_requires_terms_acceptance(): void
+    {
+        $this->from(route('auth'))->post(route('register'), [
+            'name' => 'Pengguna Baru',
+            'email' => 'baru@example.test',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+        ])->assertRedirect(route('auth'))
+            ->assertSessionHasErrors([
+                'terms' => 'Anda harus menyetujui Syarat Penggunaan dan Kebijakan Privasi terlebih dahulu.',
+            ]);
+
+        $this->assertDatabaseMissing('users', ['email' => 'baru@example.test']);
+        $this->assertGuest();
+    }
+
+    public function test_registration_rejects_an_invalid_email(): void
+    {
+        $this->from(route('auth'))->post(route('register'), [
+            'name' => 'Pengguna Baru',
+            'email' => 'bukan-email',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+            'terms' => '1',
+        ])->assertRedirect(route('auth'))
+            ->assertSessionHasErrors(['email']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'bukan-email']);
     }
 
     public function test_registration_rejects_an_existing_email(): void
@@ -38,6 +76,7 @@ class AuthenticationTest extends TestCase
             'email' => 'duplikat@example.test',
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
+            'terms' => '1',
         ])->assertRedirect(route('auth'))
             ->assertSessionHasErrors(['email']);
 
@@ -98,10 +137,27 @@ class AuthenticationTest extends TestCase
         $oldToken = session()->token();
 
         $this->post(route('logout'))
-            ->assertRedirect(route('home'));
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('logout_success', true)
+            ->assertSessionMissing('status');
 
         $this->assertGuest();
         $this->assertNotSame($oldToken, session()->token());
+    }
+
+    public function test_logout_success_notice_is_consumed_once_on_the_home_page(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('logout'))
+            ->assertRedirect(route('home'));
+
+        $this->get(route('home'))
+            ->assertSee('data-logout-success="true"', false)
+            ->assertDontSee('Anda telah keluar.');
+
+        $this->get(route('home'))
+            ->assertSee('data-logout-success="false"', false)
+            ->assertDontSee('Anda telah keluar.');
     }
 
     public function test_private_pages_redirect_guests_and_checker_remains_public(): void
@@ -120,54 +176,127 @@ class AuthenticationTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_profile_displays_and_updates_only_the_authenticated_users_name_and_email(): void
+    public function test_profile_displays_email_as_read_only_and_updates_only_the_authenticated_users_name(): void
     {
         $user = User::factory()->create([
             'name' => 'Nama Lama',
             'email' => 'lama@example.test',
         ]);
+        $otherUser = User::factory()->create([
+            'name' => 'Pengguna Lain',
+            'email' => 'lain@example.test',
+        ]);
 
-        $this->actingAs($user)
-            ->get(route('profile'))
-            ->assertOk()
+        $profileResponse = $this->actingAs($user)->get(route('profile'));
+        $profileResponse->assertOk()
             ->assertSee('Nama Lama')
             ->assertSee('lama@example.test');
+
+        $profileView = file_get_contents(resource_path('views/beranda/profil.blade.php'));
+        $this->assertIsString($profileView);
+        $this->assertStringNotContainsString('name="email"', $profileView);
 
         $this->put(route('profile.update'), [
             'name' => 'Nama Baru',
             'email' => 'baru@example.test',
             'role' => 'admin',
-        ])->assertRedirect(route('profile'));
+        ])->assertRedirect(route('profile'))
+            ->assertSessionHasErrors(['email']);
+
+        $this->assertSame('Nama Lama', $user->fresh()->name);
+        $this->assertSame('lama@example.test', $user->fresh()->email);
+
+        $this->put(route('profile.update'), [
+            'name' => 'Nama Baru',
+            'role' => 'admin',
+        ])->assertRedirect(route('profile'))
+            ->assertSessionHas('status', 'Profil berhasil diperbarui.');
 
         $this->assertSame('Nama Baru', $user->fresh()->name);
-        $this->assertSame('baru@example.test', $user->fresh()->email);
+        $this->assertSame('lama@example.test', $user->fresh()->email);
         $this->assertSame('user', $user->fresh()->role);
+        $this->assertSame('Pengguna Lain', $otherUser->fresh()->name);
+        $this->assertSame('lain@example.test', $otherUser->fresh()->email);
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee('value="Nama Baru"', false);
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Nama Baru');
     }
 
-    public function test_profile_rejects_invalid_and_duplicate_values(): void
+    public function test_profile_rejects_invalid_names_without_changing_the_account(): void
     {
         $user = User::factory()->create([
             'name' => 'Nama Lama',
-            'email' => 'lama@example.test',
         ]);
-        User::factory()->create(['email' => 'sudah-ada@example.test']);
 
         $this->actingAs($user)
             ->from(route('profile'))
             ->put(route('profile.update'), [
                 'name' => '',
-                'email' => 'sudah-ada@example.test',
-                'password' => 'new-password',
-                'role' => 'admin',
             ])->assertRedirect(route('profile'))
-            ->assertSessionHasErrors(['name', 'email']);
+            ->assertSessionHasErrors(['name']);
 
         $this->assertSame('Nama Lama', $user->fresh()->name);
-        $this->assertSame('lama@example.test', $user->fresh()->email);
         $this->assertSame('user', $user->fresh()->role);
 
         $this->get(route('profile'))
             ->assertSee('data-auth-open-on-load="false"', false)
             ->assertSee('Nama wajib diisi.');
+    }
+
+    public function test_profile_displays_premium_only_for_a_current_active_paid_subscription(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::query()->create([
+            'name' => 'Premium',
+            'slug' => 'premium',
+            'price' => 29000,
+            'currency' => 'IDR',
+            'billing_interval' => 'monthly',
+            'is_active' => true,
+        ]);
+        $subscription = new Subscription([
+            'plan_id' => $plan->id,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+        ]);
+        $subscription->status = 'active';
+        $user->subscriptions()->save($subscription);
+
+        $this->actingAs($user)
+            ->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Premium')
+            ->assertSee('profile-account-badge is-premium', false);
+    }
+
+    public function test_profile_displays_free_for_an_inactive_or_unpaid_subscription(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::query()->create([
+            'name' => 'Premium',
+            'slug' => 'premium',
+            'price' => 29000,
+            'currency' => 'IDR',
+            'billing_interval' => 'monthly',
+            'is_active' => true,
+        ]);
+        $subscription = new Subscription([
+            'plan_id' => $plan->id,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+        ]);
+        $subscription->status = 'pending';
+        $user->subscriptions()->save($subscription);
+
+        $this->actingAs($user)
+            ->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Free')
+            ->assertSee('profile-account-badge is-free', false)
+            ->assertDontSee('profile-account-badge is-premium', false);
     }
 }

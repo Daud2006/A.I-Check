@@ -248,6 +248,49 @@
 #hasil-analisis .btn {
     margin-top: 16px;
 }
+.judul-hasil-analisis {
+    margin: 0;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+}
+.judul-keterangan-analisis {
+    margin: 24px 0 0;
+    font-size: 16px;
+}
+.bagian-keterangan-analisis {
+    margin-top: 16px;
+    border-radius: 12px;
+    background: #f8fafc;
+    padding: 14px 16px;
+}
+.bagian-keterangan-analisis h4 {
+    margin: 0;
+    color: #334155;
+    font-size: 13px;
+}
+.bagian-keterangan-analisis p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.probabilitas-hasil {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    border-radius: 12px;
+    background: #f8fafc;
+    padding: 14px 16px;
+    color: #64748b;
+    font-size: 14px;
+}
+.probabilitas-hasil strong {
+    color: #10243e;
+}
+.tombol-unggah-baru[hidden] {
+    display: none !important;
+}
 .kepala-kemajuan {
     display: flex;
     justify-content: space-between;
