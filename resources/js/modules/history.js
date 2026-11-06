@@ -41,6 +41,20 @@ if (daftarRiwayat) {
             : 'Tidak tersedia';
     };
 
+    const namaFileLaporan = (namaSumber) => {
+        const namaDasar = typeof namaSumber === 'string'
+            ? namaSumber.trim().replace(/\.[^./\\]+$/, '')
+            : '';
+        const namaAman = namaDasar
+            .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
+            .replace(/[. ]+$/g, '')
+            .trim();
+
+        return namaAman
+            ? `Hasil_Analisis_${namaAman}.pdf`
+            : 'Laporan_A.I-Check.pdf';
+    };
+
     const tampilkanNotifikasi = (icon, title, text = '') => Swal.fire({
         toast: true,
         position: 'top-end',
@@ -652,11 +666,16 @@ if (daftarRiwayat) {
     document.getElementById('tombol-simpan-laporan')?.addEventListener('click', () => {
         if (idRiwayatAktif === null) return;
 
-        const cleanup = () =>
+        const judulSebelumnya = document.title;
+        const itemAktif = riwayat.find((item) => item.id === idRiwayatAktif);
+        const cleanup = () => {
             document.body.classList.remove('cetak-laporan-riwayat');
+            document.title = judulSebelumnya;
+        };
 
         window.addEventListener('afterprint', cleanup, { once: true });
 
+        document.title = namaFileLaporan(itemAktif?.name);
         document.body.classList.add('cetak-laporan-riwayat');
         window.print();
     });
