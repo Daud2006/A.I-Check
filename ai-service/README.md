@@ -1,9 +1,12 @@
-# POC Klasifikasi Gambar AI Lokal
+# Runtime Klasifikasi Gambar AI Lokal
 
-POC terisolasi ini memuat model `dima806/ai_vs_human_generated_image_detection`
-dari `ai-service/model/` dan menjalankan inferensi menggunakan CPU. Skrip
-hanya menggunakan berkas model lokal dan gambar lokal yang diberikan. Gambar
-tidak dikirim ke API inferensi atau layanan eksternal.
+.\ai-service\.venv\Scripts\python.exe ai-service\worker.py = menyalakan Model Worker
+
+Service Python ini memuat model
+`dima806/ai_vs_human_generated_image_detection` dari `ai-service/model/` dan
+menjalankan inferensi menggunakan CPU, baik dari skrip lokal maupun integrasi
+Laravel. Inferensi hanya menggunakan berkas model lokal dan gambar lokal yang
+diberikan; gambar tidak dikirim ke API inferensi atau layanan eksternal.
 
 ## Persiapan
 
@@ -17,8 +20,8 @@ ai-service\.venv\Scripts\python.exe -m pip install -r ai-service\requirements.tx
 ai-service\.venv\Scripts\python.exe ai-service\download_model.py
 ```
 
-`requirements-lock.txt` mencatat versi dependensi yang berhasil dipasang untuk
-POC ini.
+`requirements-lock.txt` mencatat versi dependensi yang digunakan untuk
+environment worker ini.
 
 Periksa pemuatan model dan label yang dikonfigurasi:
 
@@ -70,9 +73,12 @@ mengirim analisis pertama.
 
 ### Menjalankan worker
 
-Pastikan `AI_WORKER_SECRET` yang sama sudah tersedia di Windows user
-environment. Jangan membuat secret baru ketika worker dimulai ulang. Dari
-terminal PowerShell khusus, buka root repositori dan jalankan:
+Sediakan `AI_WORKER_SECRET` yang sama dengan konfigurasi Laravel melalui
+environment manager yang sesuai untuk proses Python dan PHP. Worker Python
+tidak membaca `.env` Laravel secara otomatis. Secret harus berisi minimal 32
+byte UTF-8; jangan menuliskannya pada command line, source control, atau
+dokumentasi. Dari terminal PowerShell khusus di root repositori, pastikan
+secret tersedia lalu jalankan:
 
 ```powershell
 if (-not $env:AI_WORKER_SECRET -or [Text.Encoding]::UTF8.GetByteCount($env:AI_WORKER_SECRET) -lt 32) {
@@ -81,10 +87,9 @@ if (-not $env:AI_WORKER_SECRET -or [Text.Encoding]::UTF8.GetByteCount($env:AI_WO
 ai-service\.venv\Scripts\python.exe ai-service\worker.py
 ```
 
-Biarkan terminal worker tetap terbuka. Jangan tampilkan secret, menyimpannya di
-source control, atau menuliskannya ke dokumentasi. Secret harus sudah
-dikonfigurasi di Windows user environment atau disediakan dengan aman oleh
-pengelola proses.
+Biarkan terminal worker tetap terbuka. Jangan tampilkan atau mencatat nilai
+secret. Jika environment diubah, mulai ulang proses yang perlu mewarisi
+konfigurasi terbaru.
 
 ### Memeriksa health worker
 
@@ -150,11 +155,11 @@ AI_WORKER_TIMEOUT=50
 AI_WORKER_SUBPROCESS_FALLBACK=false
 ```
 
-Secret yang sudah ada tersimpan di Windows user environment. Atur variabel
-`AI_WORKER_*` lainnya melalui Windows Environment Variables, lalu mulai ulang
-Laragon agar proses PHP mewarisi konfigurasi terbaru. Laravel membaca secret
-hanya di server; secret tidak dikirim ke browser atau ditulis ke log.
-`AI_WORKER_SECRET` harus memiliki panjang minimal 32 byte.
+Atur `AI_WORKER_*` melalui environment server-side yang sesuai, lalu mulai
+ulang Laragon/proses PHP agar konfigurasi terbaru terbaca. Nilai
+`AI_WORKER_SECRET` pada Laravel dan worker harus sama dan memiliki panjang
+minimal 32 byte UTF-8. Laravel mengirimkannya hanya dalam header autentikasi
+server-ke-server, bukan ke browser.
 
 Laravel membatasi URL worker ke `http://127.0.0.1`. Batas waktu request worker
 bawaannya 50 detik, lebih pendek dari batas request browser yang ada, yaitu
