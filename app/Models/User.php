@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Notifications\PasswordResetOtp;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -90,6 +91,25 @@ class User extends Authenticatable
     public function usageRecords(): HasMany
     {
         return $this->hasMany(UsageRecord::class);
+    }
+
+    public function hasPremiumAccess(): bool
+    {
+        $now = now();
+
+        return $this->subscriptions()
+            ->where('status', 'active')
+            ->whereNull('cancelled_at')
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+            })
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+            })
+            ->whereHas('plan', function (Builder $query): void {
+                $query->where('is_active', true)->where('price', '>', 0);
+            })
+            ->exists();
     }
 
     public function setRoleAttribute(string $role): void

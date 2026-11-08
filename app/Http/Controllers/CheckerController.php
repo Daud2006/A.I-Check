@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\ImageClassificationException;
 use App\Models\ImageAnalysis;
+use App\Models\User;
 use App\Services\LocalAiDetector;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -22,10 +27,47 @@ class CheckerController extends Controller
 
     private const STORAGE_DISK = 'image-analyses';
 
-    // Menampilkan halaman deteksi.
-    public function index(): View
+    private const GUEST_COOKIE = 'aicheck_guest_usage';
+
+    private const GUEST_LIMIT = 2;
+
+    private const FREE_DAILY_LIMIT = 3;
+
+    private const QUOTA_LOCK_SECONDS = 180;
+
+    private const QUOTA_LOCK_WAIT_SECONDS = 80;
+
+    public function index(Request $request): View
     {
-        return view('deteksi.index');
+        $user = $request->user();
+
+        if ($user instanceof User) {
+            $quotaMessage = $user->hasPremiumAccess()
+                ? 'Akun Premium dapat melakukan Deteksi Gambar tanpa batas harian.'
+                : 'Akun Free memiliki 3 kesempatan Deteksi Gambar per hari. Sisa hari ini: '
+                    .max(0, self::FREE_DAILY_LIMIT - $this->dailyUsageCount($user)).'.';
+        } else {
+            $guestId = $this->guestIdentifier($request);
+            if ($guestId === null) {
+                $guestId = (string) Str::uuid();
+                Cookie::queue(cookie(
+                    self::GUEST_COOKIE,
+                    $guestId,
+                    5256000,
+                    '/',
+                    null,
+                    $request->isSecure(),
+                    true,
+                    false,
+                    'lax',
+                ));
+            }
+
+            $quotaMessage = 'Pengunjung memiliki 2 kesempatan Deteksi Gambar total. Sisa kesempatan: '
+                .max(0, self::GUEST_LIMIT - (int) Cache::store('database')->get($this->guestUsageKey($guestId), 0)).'.';
+        }
+
+        return view('deteksi.index', ['quotaMessage' => $quotaMessage]);
     }
 
     public function store(Request $request, LocalAiDetector $classifier): JsonResponse
@@ -49,35 +91,98 @@ class CheckerController extends Controller
 
         $file = $validated['image'];
         $user = $request->user();
-        $storedPath = null;
+        if (! $user instanceof User) {
+            $guestId = $this->guestIdentifier($request);
+            if ($guestId === null) {
+                return response()->json([
+                    'code' => 'guest_identity_missing',
+                    'message' => 'Muat ulang halaman Deteksi Gambar sebelum mengunggah gambar.',
+                ], 428);
+            }
+
+            try {
+                return Cache::store('database')->lock($this->guestLockKey($guestId), self::QUOTA_LOCK_SECONDS)
+                    ->block(self::QUOTA_LOCK_WAIT_SECONDS, function () use ($request, $classifier, $file, $guestId): JsonResponse {
+                        $used = (int) Cache::store('database')->get($this->guestUsageKey($guestId), 0);
+                        if ($used >= self::GUEST_LIMIT) {
+                            return $this->quotaExceededResponse(
+                                'guest_limit_reached',
+                                'Batas Deteksi Gambar tanpa login telah tercapai. Silakan buat akun atau login untuk melanjutkan Deteksi Gambar dan menikmati fitur A.I-Check.',
+                            );
+                        }
+
+                        $response = $this->processUpload($request, $classifier, $file, null, false, $guestId);
+                        if ($response->getStatusCode() === 201) {
+                            Cache::store('database')->put($this->guestUsageKey($guestId), $used + 1, 5256000);
+                        }
+
+                        return $response;
+                    });
+            } catch (LockTimeoutException) {
+                return $this->quotaLockUnavailableResponse();
+            }
+        }
+
+        if ($user->hasPremiumAccess()) {
+            return $this->processUpload($request, $classifier, $file, $user, false);
+        }
 
         try {
-            $storedPath = $file->store('users/'.$user->getKey(), self::STORAGE_DISK);
+            return Cache::store('database')->lock('image-analysis:user:'.$user->getKey(), self::QUOTA_LOCK_SECONDS)
+                ->block(self::QUOTA_LOCK_WAIT_SECONDS, function () use ($request, $classifier, $file, $user): JsonResponse {
+                    if ($this->dailyUsageCount($user) >= self::FREE_DAILY_LIMIT) {
+                        return $this->quotaExceededResponse(
+                            'free_limit_reached',
+                            'Anda telah habis batas Deteksi Gambar dengan akun Free (Gratis). Silakan berlangganan atau tunggu hingga besok hari untuk dapat melakukan Deteksi Gambar kembali.',
+                        );
+                    }
+
+                    return $this->processUpload($request, $classifier, $file, $user, true);
+                });
+        } catch (LockTimeoutException) {
+            return $this->quotaLockUnavailableResponse();
+        }
+    }
+
+    private function processUpload(
+        Request $request,
+        LocalAiDetector $classifier,
+        UploadedFile $file,
+        ?User $user,
+        bool $recordFreeUsage,
+        ?string $guestId = null,
+    ): JsonResponse {
+        $storedPath = null;
+        $originalName = basename(str_replace('\\', '/', $file->getClientOriginalName()));
+        $originalName = preg_replace('/[\x00-\x1F\x7F]/', '', $originalName) ?: 'image';
+
+        try {
+            $directory = $user instanceof User
+                ? 'users/'.$user->getKey()
+                : 'guests/'.hash('sha256', (string) $guestId);
+            $storedPath = $file->store($directory, self::STORAGE_DISK);
 
             if (! is_string($storedPath) || $storedPath === '') {
                 throw new RuntimeException('Private image storage did not return a path.');
             }
 
-            $originalName = basename(str_replace('\\', '/', $file->getClientOriginalName()));
-            $originalName = preg_replace('/[\x00-\x1F\x7F]/', '', $originalName) ?: 'image';
+            $analysis = new ImageAnalysis([
+                'original_filename' => Str::limit($originalName, 255, ''),
+                'image_path' => $storedPath,
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+            ]);
+            $analysis->status = 'pending';
 
-            $analysis = DB::transaction(function () use ($file, $originalName, $storedPath, $user): ImageAnalysis {
-                $analysis = new ImageAnalysis([
-                    'original_filename' => Str::limit($originalName, 255, ''),
-                    'image_path' => $storedPath,
-                    'mime_type' => $file->getMimeType(),
-                    'file_size' => $file->getSize(),
-                ]);
-                $analysis->status = 'pending';
-
-                $user->imageAnalyses()->save($analysis);
-
-                return $analysis;
-            });
+            if ($user instanceof User) {
+                DB::transaction(fn () => $user->imageAnalyses()->save($analysis));
+            }
         } catch (Throwable $exception) {
             if (is_string($storedPath) && $storedPath !== '') {
                 try {
-                    Storage::disk(self::STORAGE_DISK)->delete($storedPath);
+                    if (! Storage::disk(self::STORAGE_DISK)->delete($storedPath)) {
+                        Log::warning('Unable to clean up a failed private image upload.');
+                    }
                 } catch (Throwable $cleanupException) {
                     Log::error('Unable to clean up a failed private image upload.', [
                         ...ImageClassificationException::contextFor(
@@ -102,7 +207,9 @@ class CheckerController extends Controller
 
         try {
             $analysis->status = 'processing';
-            $analysis->save();
+            if ($user instanceof User) {
+                $analysis->save();
+            }
 
             $prediction = $classifier->classify($analysis);
 
@@ -110,40 +217,142 @@ class CheckerController extends Controller
             $analysis->confidence_score = $prediction['score'];
             $analysis->model_name = $prediction['model'];
             $analysis->status = 'completed';
-            $analysis->save();
+
+            if ($user instanceof User) {
+                DB::transaction(function () use ($analysis, $user, $recordFreeUsage): void {
+                    $analysis->save();
+
+                    if ($recordFreeUsage) {
+                        $user->usageRecords()->create([
+                            'image_analysis_id' => $analysis->getKey(),
+                            'usage_type' => 'analysis',
+                            'quantity' => 1,
+                        ]);
+                    }
+                });
+            }
         } catch (ImageClassificationException $exception) {
-            $persistedFailure = $this->markAnalysisFailed($analysis);
+            $persistedFailure = $user instanceof User
+                ? $this->markAnalysisFailed($analysis)
+                : $this->markGuestAnalysisFailed($analysis);
 
             Log::warning('Local AI image classification failed.', [
                 ...$exception->diagnosticContext(),
             ]);
 
+            $this->cleanupGuestImage($user, $storedPath);
+
             return response()->json([
-                'id' => $analysis->getKey(),
+                'code' => 'analysis_failed',
+                'id' => $user instanceof User ? $analysis->getKey() : null,
                 'status' => $persistedFailure ? 'failed' : null,
                 'message' => $exception->getMessage(),
             ], $exception->httpStatus);
         } catch (Throwable $exception) {
-            $this->markAnalysisFailed($analysis);
+            if ($user instanceof User) {
+                $this->markAnalysisFailed($analysis);
+            } else {
+                $this->markGuestAnalysisFailed($analysis);
+            }
 
             Log::error('Unable to complete image classification.', [
                 ...ImageClassificationException::contextFor($exception, 'controller', 'internal_error', 500, null),
             ]);
 
+            $this->cleanupGuestImage($user, $storedPath);
+
             return response()->json([
-                'id' => $analysis->getKey(),
+                'code' => 'analysis_failed',
+                'id' => $user instanceof User ? $analysis->getKey() : null,
+                'status' => 'failed',
                 'message' => 'Analisis belum dapat diselesaikan. Silakan coba kembali.',
             ], 500);
         }
 
-        return response()->json([
+        $response = response()->json([
             'id' => $analysis->getKey(),
             'status' => $analysis->status,
             'result_label' => $analysis->result_label,
             'confidence_score' => (float) $analysis->confidence_score,
             'model_name' => $analysis->model_name,
+            'engine_evidence' => $prediction['evidence'] ?? [],
             'message' => 'Analisis gambar selesai. Hasil merupakan prediksi model, bukan kepastian.',
         ], 201);
+
+        $this->cleanupGuestImage($user, $storedPath);
+
+        return $response;
+    }
+
+    private function dailyUsageCount(User $user): int
+    {
+        $startOfDay = now()->startOfDay();
+
+        return (int) $user->usageRecords()
+            ->where('usage_type', 'analysis')
+            ->where('created_at', '>=', $startOfDay)
+            ->where('created_at', '<', $startOfDay->copy()->addDay())
+            ->sum('quantity');
+    }
+
+    private function guestIdentifier(Request $request): ?string
+    {
+        $guestId = $request->cookie(self::GUEST_COOKIE);
+
+        return is_string($guestId) && Str::isUuid($guestId) ? $guestId : null;
+    }
+
+    private function guestUsageKey(string $guestId): string
+    {
+        return 'image-analysis:guest:'.hash('sha256', $guestId);
+    }
+
+    private function guestLockKey(string $guestId): string
+    {
+        return $this->guestUsageKey($guestId).':lock';
+    }
+
+    private function quotaExceededResponse(string $code, string $message): JsonResponse
+    {
+        return response()->json([
+            'code' => $code,
+            'message' => $message,
+        ], 429);
+    }
+
+    private function quotaLockUnavailableResponse(): JsonResponse
+    {
+        return response()->json([
+            'code' => 'quota_lock_unavailable',
+            'message' => 'Deteksi Gambar sedang diproses. Silakan coba kembali beberapa saat lagi.',
+        ], 503);
+    }
+
+    private function markGuestAnalysisFailed(ImageAnalysis $analysis): bool
+    {
+        $analysis->result_label = null;
+        $analysis->confidence_score = null;
+        $analysis->model_name = null;
+        $analysis->status = 'failed';
+
+        return true;
+    }
+
+    private function cleanupGuestImage(?User $user, ?string $storedPath): void
+    {
+        if ($user instanceof User || ! is_string($storedPath) || $storedPath === '') {
+            return;
+        }
+
+        try {
+            if (! Storage::disk(self::STORAGE_DISK)->delete($storedPath)) {
+                Log::warning('Unable to clean up a temporary guest image.');
+            }
+        } catch (Throwable $exception) {
+            Log::warning('Unable to clean up a temporary guest image.', [
+                'exception_class' => $exception::class,
+            ]);
+        }
     }
 
     private function markAnalysisFailed(ImageAnalysis $analysis): bool

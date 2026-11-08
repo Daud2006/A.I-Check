@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ImageAnalysis;
 use App\Models\User;
+use App\Services\LocalAiDetector;
 use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Mockery;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException as SymfonyProcessTimedOutException;
@@ -44,13 +46,28 @@ class ImageCheckerTest extends TestCase
         $this->fakeLocalInference();
     }
 
-    public function test_guest_cannot_upload_or_access_analysis_files(): void
+    public function test_guest_can_upload_without_login_but_cannot_access_saved_analysis_files(): void
     {
         Storage::fake('image-analyses');
+        $this->mock(LocalAiDetector::class)
+            ->shouldReceive('classify')
+            ->once()
+            ->andReturn([
+                'label' => 'AI-GENERATED',
+                'score' => 0.91,
+                'model' => 'simple_ai_image_detector',
+                'evidence' => [],
+            ]);
 
-        $this->postJson(route('checker.analyses.store'), [
-            'image' => UploadedFile::fake()->image('poster.png'),
-        ])->assertUnauthorized();
+        $this->withCredentials()
+            ->withCookie('aicheck_guest_usage', (string) Str::uuid())
+            ->postJson(route('checker.analyses.store'), [
+                'image' => UploadedFile::fake()->image('poster.png'),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('status', 'completed')
+            ->assertJsonPath('result_label', 'AI-GENERATED')
+            ->assertJsonPath('id', null);
 
         $this->getJson(route('checker.analyses.show', 1))->assertUnauthorized();
         $this->get(route('checker.analyses.image', 1))->assertRedirect(route('auth'));

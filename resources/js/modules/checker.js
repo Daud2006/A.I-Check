@@ -1,4 +1,6 @@
 // Unggah gambar dan tampilkan hanya hasil yang dikembalikan backend.
+import Swal from 'sweetalert2';
+
 const inputGambar = document.getElementById('input-gambar');
 const tombolPilihGambar = document.getElementById('tombol-pilih-gambar');
 const areaDropGambar = document.getElementById('area-drop-gambar');
@@ -63,9 +65,9 @@ const tampilkanPesan = (pesan, { error = false, tautanLogin = false } = {}) => {
     pesanElement.textContent = pesan;
     hasilAnalisis.append(pesanElement);
 
-    if (tautanLogin && inputGambar?.dataset.authUrl) {
+    if (tautanLogin && inputGambar?.dataset.loginUrl) {
         const loginLink = document.createElement('a');
-        loginLink.href = inputGambar.dataset.authUrl;
+        loginLink.href = inputGambar.dataset.loginUrl;
         loginLink.className = 'btn btn-primary';
         loginLink.textContent = 'Masuk ke akun';
         hasilAnalisis.append(loginLink);
@@ -74,22 +76,105 @@ const tampilkanPesan = (pesan, { error = false, tautanLogin = false } = {}) => {
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;
     hasilAnalisis.hidden = false;
 };
+
+const tampilkanKesalahanAnalisis = () => {
+    if (!hasilAnalisis) return;
+
+    const heading = document.createElement('h3');
+    heading.className = 'judul-keterangan-analisis';
+    heading.textContent = 'Mengapa Gambar Ini Terdeteksi Demikian?';
+
+    const message = document.createElement('p');
+    message.textContent = 'Analisis tidak dapat diselesaikan karena terjadi kesalahan. Tidak ada kesimpulan AI atau REAL yang dapat diberikan. Silakan coba kembali.';
+
+    const section = document.createElement('section');
+    section.className = 'bagian-keterangan-analisis';
+    section.append(heading, message);
+
+    hasilAnalisis.replaceChildren(section);
+    hasilAnalisis.hidden = false;
+    if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;
+    if (tombolUnggahBaru) tombolUnggahBaru.hidden = false;
+};
+
+const tampilkanPopupLimitGuest = async () => {
+    const result = await Swal.fire({
+        title: 'Kesempatan Deteksi Gambar Habis!',
+        text: 'Batas Deteksi Gambar tanpa login telah tercapai. Silakan buat akun atau login untuk melanjutkan Deteksi Gambar dan menikmati fitur A.I-Check.',
+        icon: 'warning',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Login',
+        denyButtonText: 'Buat Akun',
+        cancelButtonText: 'Tidak',
+        buttonsStyling: false,
+        reverseButtons: true,
+        focusCancel: true,
+        customClass: {
+            popup: 'swal-riwayat-popup',
+            title: 'swal-riwayat-title',
+            htmlContainer: 'swal-riwayat-text',
+            actions: 'swal-riwayat-actions',
+            confirmButton: 'swal-riwayat-confirm',
+            denyButton: 'swal-riwayat-deny',
+            cancelButton: 'swal-riwayat-cancel',
+        },
+    });
+
+    if (result.isConfirmed && inputGambar?.dataset.loginUrl) {
+        window.location.assign(inputGambar.dataset.loginUrl);
+    } else if (result.isDenied && inputGambar?.dataset.registerUrl) {
+        window.location.assign(inputGambar.dataset.registerUrl);
+    }
+};
+
+const tampilkanPopupLimitFree = async () => {
+    const result = await Swal.fire({
+        title: 'Batas Deteksi Gambar Tercapai!',
+        text: 'Anda telah habis batas Deteksi Gambar dengan akun Free (Gratis). Silakan berlangganan atau tunggu hingga besok hari untuk dapat melakukan Deteksi Gambar kembali.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Berlangganan',
+        cancelButtonText: 'Tidak',
+        buttonsStyling: false,
+        reverseButtons: true,
+        focusCancel: true,
+        customClass: {
+            popup: 'swal-riwayat-popup',
+            title: 'swal-riwayat-title',
+            htmlContainer: 'swal-riwayat-text',
+            actions: 'swal-riwayat-actions',
+            confirmButton: 'swal-riwayat-info-confirm',
+            cancelButton: 'swal-riwayat-cancel',
+        },
+    });
+
+    if (result.isConfirmed) {
+        document.querySelector('[data-subscribe-open]')?.click();
+    }
+};
+
 const tampilkanPrediksi = (payload) => {
+    if (payload.result_label === 'ERROR') {
+        tampilkanKesalahanAnalisis();
+        return false;
+    }
+
     const hasil = {
         'AI-GENERATED': {
-            interpretasi: 'Model memberi kategori AI-GENERATED. Ini merupakan indikasi dari prediksi model, bukan bukti independen bahwa gambar dibuat menggunakan AI.',
+            interpretasi: 'AI Engine memberikan verdict AI-GENERATED. Ini merupakan prediksi model, bukan bukti mutlak bahwa gambar dibuat menggunakan AI.',
             kelas: 'status-ai',
         },
         'AI-EDITED': {
-            interpretasi: 'Model memberi kategori AI-EDITED. Ini merupakan indikasi dari prediksi model, bukan bukti independen bahwa gambar telah diedit menggunakan AI.',
+            interpretasi: 'AI Engine memberikan verdict AI-EDITED. Kategori ini mengikuti hasil engine dan bukan bukti mutlak tentang proses pengeditan gambar.',
             kelas: 'status-ai',
         },
         REAL: {
-            interpretasi: 'Model memberi kategori REAL. Prediksi ini tidak membuktikan bahwa gambar autentik atau tidak pernah dimanipulasi.',
+            interpretasi: 'AI Engine memberikan verdict REAL dengan skor probabilitas AI yang ditampilkan. Hasil ini tidak membuktikan bahwa gambar pasti diambil dengan kamera atau tidak pernah diedit.',
             kelas: 'status-real',
         },
         UNCERTAIN: {
-            interpretasi: 'Model memberi kategori UNCERTAIN, sehingga kategori gambar belum dapat ditentukan dari hasil prediksi ini.',
+            interpretasi: 'AI Engine memberikan verdict UNCERTAIN, sehingga hasil belum cukup meyakinkan untuk menentukan apakah gambar dibuat AI atau berasal dari sumber asli.',
             kelas: 'status-uncertain',
         },
     }[payload.result_label];
@@ -129,10 +214,6 @@ const tampilkanPrediksi = (payload) => {
     nilaiSkor.textContent = `${(scoreAI * 100).toFixed(2)}%`;
     skor.append(labelSkor, nilaiSkor);
 
-    const judulKeterangan = document.createElement('h3');
-    judulKeterangan.className = 'judul-keterangan-analisis';
-    judulKeterangan.textContent = 'Keterangan Analisis';
-
     const buatBagianKeterangan = (judul, isi) => {
         const bagian = document.createElement('section');
         bagian.className = 'bagian-keterangan-analisis';
@@ -147,32 +228,84 @@ const tampilkanPrediksi = (payload) => {
         return bagian;
     };
 
-    const bagianHasilModel = buatBagianKeterangan(
-        'A. Hasil model',
-        `${payload.result_label} — Probabilitas AI ${nilaiSkor.textContent}.`,
-    );
-    const bagianBukti = buatBagianKeterangan(
-        'B. Bukti pendukung',
-        'Sistem saat ini tidak memeriksa metadata EXIF maupun Content Credentials (C2PA). Bukti metadata atau provenance belum diperiksa; ini tidak berarti informasi tersebut tidak ada pada gambar.',
-    );
-    const bagianInterpretasi = buatBagianKeterangan(
-        'C. Interpretasi',
-        hasil.interpretasi,
-    );
-    const bagianKeterbatasan = buatBagianKeterangan(
-        'D. Keterbatasan',
-        'Probabilitas AI adalah estimasi model, bukan tingkat kepastian atau akurasi hasil. Model dapat keliru; tanpa pemeriksaan metadata dan provenance, keduanya tidak dapat digunakan untuk menguatkan atau menyangkal prediksi ini.',
-    );
+    const evidence = payload.engine_evidence && typeof payload.engine_evidence === 'object'
+        ? payload.engine_evidence
+        : {};
+    const modelScores = evidence.per_model && typeof evidence.per_model === 'object'
+        ? Object.entries(evidence.per_model).filter(([, value]) => typeof value === 'number' && Number.isFinite(value))
+        : [];
+    const kalimatDasar = {
+        'AI-GENERATED': `Gambar ini terindikasi dibuat menggunakan AI. Probabilitas AI dari model adalah ${nilaiSkor.textContent}. Hasil ini merupakan prediksi, bukan bukti mutlak.`,
+        'AI-EDITED': `Gambar ini mendapat kategori AI-EDITED dari AI Engine dengan probabilitas AI ${nilaiSkor.textContent}. Kategori ini mengikuti verdict engine dan bukan bukti mutlak tentang proses pengeditan.`,
+        REAL: `Gambar ini terindikasi sebagai gambar asli (Human/Real). Probabilitas AI yang diberikan model adalah ${nilaiSkor.textContent}. Hasil ini bukan jaminan bahwa gambar pasti diambil menggunakan kamera atau tidak pernah diedit.`,
+        UNCERTAIN: `Hasil Deteksi Gambar belum cukup meyakinkan. AI Engine memberikan probabilitas AI ${nilaiSkor.textContent}; disarankan melakukan pemeriksaan tambahan.`,
+    }[payload.result_label];
+
+    const penjelasan = [kalimatDasar];
+    if (typeof evidence.threshold === 'number') {
+        penjelasan.push(`Threshold AI Engine: ${(evidence.threshold * 100).toFixed(2)}%.`);
+    }
+    if (typeof evidence.low_threshold === 'number') {
+        penjelasan.push(`Batas bawah rentang uncertain: ${(evidence.low_threshold * 100).toFixed(2)}%.`);
+    }
+    if (
+        payload.result_label === 'AI-GENERATED'
+        && evidence.metadata_says_ai !== true
+        && typeof evidence.threshold === 'number'
+        && scoreAI >= evidence.threshold
+    ) {
+        penjelasan.push('Skor probabilitas AI mencapai threshold yang digunakan engine.');
+    } else if (
+        payload.result_label === 'REAL'
+        && typeof evidence.low_threshold === 'number'
+        && scoreAI <= evidence.low_threshold
+    ) {
+        penjelasan.push('Skor probabilitas AI berada pada atau di bawah batas bawah engine, yang mendukung verdict REAL.');
+    } else if (
+        payload.result_label === 'UNCERTAIN'
+        && typeof evidence.low_threshold === 'number'
+        && typeof evidence.threshold === 'number'
+        && scoreAI > evidence.low_threshold
+        && scoreAI < evidence.threshold
+    ) {
+        penjelasan.push('Skor berada di antara batas bawah dan threshold engine, sehingga hasil masuk rentang uncertain.');
+    }
+    if (typeof evidence.basis === 'string' && evidence.basis.trim() !== '') {
+        penjelasan.push(`Dasar yang dilaporkan AI Engine: ${evidence.basis}`);
+    }
+    if (evidence.metadata_says_ai === true) {
+        penjelasan.push('Metadata provenance yang diperiksa AI Engine mendukung indikasi AI.');
+    }
+    if (typeof evidence.metadata_generator === 'string' && evidence.metadata_generator.trim() !== '') {
+        penjelasan.push(`Generator pada metadata: ${evidence.metadata_generator}.`);
+    }
+    if (modelScores.length > 1) {
+        const scores = modelScores.map(([, value]) => value);
+        const minScore = Math.min(...scores);
+        const maxScore = Math.max(...scores);
+        penjelasan.push(
+            `Skor antar-model bervariasi dari ${(minScore * 100).toFixed(2)}% hingga ${(maxScore * 100).toFixed(2)}%.`,
+        );
+    }
+
+    const judulPenjelasan = document.createElement('h3');
+    judulPenjelasan.className = 'judul-keterangan-analisis';
+    judulPenjelasan.textContent = 'Mengapa Gambar Ini Terdeteksi Demikian?';
+    const bagianPenjelasan = buatBagianKeterangan('Penjelasan berdasarkan hasil AI Engine', penjelasan.join(' '));
+    const bagianPerModel = modelScores.length
+        ? buatBagianKeterangan(
+            'Skor dari setiap model',
+            modelScores.map(([name, value]) => `${name}: ${(value * 100).toFixed(2)}%`).join(' · '),
+        )
+        : null;
 
     hasilAnalisis?.replaceChildren(
         heading,
         badge,
         skor,
-        judulKeterangan,
-        bagianHasilModel,
-        bagianBukti,
-        bagianInterpretasi,
-        bagianKeterbatasan,
+        judulPenjelasan,
+        bagianPenjelasan,
+        ...(bagianPerModel ? [bagianPerModel] : []),
     );
     if (hasilAnalisis) hasilAnalisis.hidden = false;
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;
@@ -193,10 +326,8 @@ const aturStatusTombol = (unggahanSelesai = false) => {
     tombolAnalisis.disabled = unggahanBerlangsung || unggahanSelesai;
     if (teksTombolAnalisis) {
         teksTombolAnalisis.textContent = unggahanSelesai
-            ? 'Analisis Selesai'
-            : fileTerpilih
-                ? 'Periksa'
-                : 'Unggah Gambar';
+            ? 'Deteksi Selesai'
+            : 'Deteksi Gambar';
     }
 };
 
@@ -319,7 +450,19 @@ const unggahGambar = () => {
         }
 
         const validationMessage = payload.errors?.image?.[0];
-        if (request.status === 422) {
+        if (payload.code === 'guest_limit_reached') {
+            void tampilkanPopupLimitGuest();
+        } else if (payload.code === 'free_limit_reached') {
+            void tampilkanPopupLimitFree();
+        } else if (
+            payload.code === 'analysis_failed'
+            || payload.status === 'failed'
+            || payload.result_label === 'ERROR'
+            || request.status >= 500
+        ) {
+            tampilkanPesan(payload.message || 'Analisis tidak dapat diselesaikan. Silakan coba kembali.', { error: true });
+            tampilkanKesalahanAnalisis();
+        } else if (request.status === 422) {
             tampilkanPesan(validationMessage || payload.message || 'File gambar tidak valid.', { error: true });
         } else if (request.status === 401) {
             tampilkanPesan('Silakan masuk sebelum mengunggah gambar.', { error: true, tautanLogin: true });

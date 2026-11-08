@@ -24,10 +24,12 @@ Route::middleware('guest')->group(function () {
 });
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/checker', [CheckerController::class, 'index'])->name('checker');
-Route::middleware('auth')->prefix('checker/analyses')->name('checker.analyses.')->group(function () {
+Route::prefix('checker/analyses')->name('checker.analyses.')->group(function () {
     Route::post('/', [CheckerController::class, 'store'])->middleware('throttle:10,1')->name('store');
-    Route::get('/{analysisId}', [CheckerController::class, 'show'])->whereNumber('analysisId')->name('show');
-    Route::get('/{analysisId}/image', [CheckerController::class, 'image'])->whereNumber('analysisId')->name('image');
+    Route::middleware('auth')->group(function () {
+        Route::get('/{analysisId}', [CheckerController::class, 'show'])->whereNumber('analysisId')->name('show');
+        Route::get('/{analysisId}/image', [CheckerController::class, 'image'])->whereNumber('analysisId')->name('image');
+    });
 });
 Route::get('/about', [AboutController::class, 'index'])->name('about');
 

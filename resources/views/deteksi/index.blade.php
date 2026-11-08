@@ -8,8 +8,9 @@
         <div class="container">
             <div class="judul-halaman-pemeriksaan">
                 <span class="eyebrow">@include('icon', ['name' => 'spark', 'class' => 'icon-sm'])AI Image Checker</span>
-                <h1 class="judul-pemeriksaan" id="judul-pemeriksaan">Periksa gambar Anda</h1>
+                <h1 class="judul-pemeriksaan" id="judul-pemeriksaan">Deteksi Gambar</h1>
                 <p class="deskripsi-pemeriksaan">Unggah gambar dengan aman untuk mendapatkan hasil analisis model AI dalam empat kategori. Hasil merupakan estimasi dan bukan bukti pasti.</p>
+                <p class="informasi-kuota-deteksi">{{ $quotaMessage }}</p>
             </div>
 
             <p class="pesan-checker" id="pesan-checker" role="alert" aria-live="polite" hidden></p>
@@ -22,9 +23,10 @@
                     <button type="button" class="btn btn-light-blue tombol-utama" id="tombol-pilih-gambar">Pilih Gambar</button>
                     <p class="catatan-upload" id="petunjuk-format-gambar">JPEG, PNG, atau WebP · Maksimal 10 MB</p>
                     <input type="file" id="input-gambar" accept="image/png,image/jpeg,image/webp"
-                        aria-label="Pilih gambar untuk dianalisis" aria-describedby="petunjuk-format-gambar"
+                        aria-label="Pilih gambar untuk Deteksi Gambar" aria-describedby="petunjuk-format-gambar"
                         data-upload-url="{{ route('checker.analyses.store') }}"
-                        data-auth-url="{{ route('auth') }}" hidden>
+                        data-login-url="{{ route('auth', ['mode' => 'login']) }}"
+                        data-register-url="{{ route('auth', ['mode' => 'register']) }}" hidden>
                 </div>
             </div>
 
@@ -58,13 +60,13 @@
                             <div class="kepala-kemajuan"><span id="status-kemajuan">Mengunggah gambar...</span><span id="nilai-kemajuan">0%</span></div>
                             <div class="lajur-progres" role="progressbar" aria-label="Kemajuan unggah" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="isi-progres" id="isi-kemajuan" style="width:0%"></div></div>
                         </div>
-                        <button type="button" class="btn btn-primary btn-full tombol-analisis" id="tombol-analisis" style="margin-top:24px">@include('icon', ['name' => 'upload'])<span id="teks-tombol-analisis">Unggah Gambar</span></button>
+                        <button type="button" class="btn btn-primary btn-full tombol-analisis" id="tombol-analisis" style="margin-top:24px">@include('icon', ['name' => 'upload'])                        <span id="teks-tombol-analisis">Deteksi Gambar</span></button>
                     </div>
 
                     <div id="hasil-analisis" role="status" aria-live="polite" hidden></div>
                     <button type="button" class="btn btn-primary btn-full tombol-unggah-baru" id="tombol-unggah-baru" hidden>
                         @include('icon', ['name' => 'upload'])
-                        Unggah Gambar Baru
+                        Deteksi Gambar Baru
                     </button>
                 </div>
             </div>

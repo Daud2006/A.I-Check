@@ -133,10 +133,108 @@ class LocalAiDetector
                 );
             }
 
+            $evidence = [];
+            if (array_key_exists('basis', $result)) {
+                if (! is_string($result['basis'])) {
+                    throw new ImageClassificationException(
+                        'Hasil deteksi AI tidak dapat diverifikasi.',
+                        502,
+                        failureType: 'invalid_detector_evidence',
+                        upstreamStatus: $response->status(),
+                        stage: $stage,
+                    );
+                }
+                $evidence['basis'] = $result['basis'];
+            }
+
+            foreach (['threshold', 'low_threshold'] as $probabilityField) {
+                if (! array_key_exists($probabilityField, $result)) {
+                    continue;
+                }
+
+                $probability = $result[$probabilityField];
+                if (
+                    $probability !== null
+                    && ((! is_float($probability) && ! is_int($probability))
+                        || ! is_finite((float) $probability)
+                        || $probability < 0
+                        || $probability > 1)
+                ) {
+                    throw new ImageClassificationException(
+                        'Hasil deteksi AI tidak dapat diverifikasi.',
+                        502,
+                        failureType: 'invalid_detector_evidence',
+                        upstreamStatus: $response->status(),
+                        stage: $stage,
+                    );
+                }
+
+                $evidence[$probabilityField] = $probability === null ? null : (float) $probability;
+            }
+
+            if (array_key_exists('per_model', $result)) {
+                if (! is_array($result['per_model'])) {
+                    throw new ImageClassificationException(
+                        'Hasil deteksi AI tidak dapat diverifikasi.',
+                        502,
+                        failureType: 'invalid_detector_evidence',
+                        upstreamStatus: $response->status(),
+                        stage: $stage,
+                    );
+                }
+
+                foreach ($result['per_model'] as $modelName => $modelScore) {
+                    if (
+                        ! is_string($modelName)
+                        || (! is_float($modelScore) && ! is_int($modelScore))
+                        || ! is_finite((float) $modelScore)
+                        || $modelScore < 0
+                        || $modelScore > 1
+                    ) {
+                        throw new ImageClassificationException(
+                            'Hasil deteksi AI tidak dapat diverifikasi.',
+                            502,
+                            failureType: 'invalid_detector_evidence',
+                            upstreamStatus: $response->status(),
+                            stage: $stage,
+                        );
+                    }
+                }
+
+                $evidence['per_model'] = $result['per_model'];
+            }
+
+            if (array_key_exists('metadata_says_ai', $result)) {
+                if (! is_bool($result['metadata_says_ai'])) {
+                    throw new ImageClassificationException(
+                        'Hasil deteksi AI tidak dapat diverifikasi.',
+                        502,
+                        failureType: 'invalid_detector_evidence',
+                        upstreamStatus: $response->status(),
+                        stage: $stage,
+                    );
+                }
+                $evidence['metadata_says_ai'] = $result['metadata_says_ai'];
+            }
+
+            if (array_key_exists('metadata_generator', $result)) {
+                if ($result['metadata_generator'] !== null && ! is_string($result['metadata_generator'])) {
+                    throw new ImageClassificationException(
+                        'Hasil deteksi AI tidak dapat diverifikasi.',
+                        502,
+                        failureType: 'invalid_detector_evidence',
+                        upstreamStatus: $response->status(),
+                        stage: $stage,
+                    );
+                }
+                $evidence['metadata_generator'] = $result['metadata_generator'];
+            }
+
             return [
                 'label' => $result['verdict'],
                 'score' => round((float) $result['p_ai'], 6),
                 'model' => self::MODEL_ID,
+                'evidence' => $evidence,
             ];
         } catch (ImageClassificationException $exception) {
             throw $exception;
