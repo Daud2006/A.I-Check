@@ -58,10 +58,10 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('home'))->with('status', 'Pendaftaran berhasil. Anda sudah masuk.');
+        return redirect()
+            ->route('auth', ['mode' => 'login'])
+            ->with('registration_success', true)
+            ->with('registered_email', $user->email);
     }
 
     public function login(Request $request): RedirectResponse
@@ -85,7 +85,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'));
+        return redirect()->intended(route('home'))->with('login_success', true);
     }
 
     public function sendPasswordResetOtp(Request $request): JsonResponse

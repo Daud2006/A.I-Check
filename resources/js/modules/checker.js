@@ -228,76 +228,17 @@ const tampilkanPrediksi = (payload) => {
         return bagian;
     };
 
-    const evidence = payload.engine_evidence && typeof payload.engine_evidence === 'object'
-        ? payload.engine_evidence
-        : {};
-    const modelScores = evidence.per_model && typeof evidence.per_model === 'object'
-        ? Object.entries(evidence.per_model).filter(([, value]) => typeof value === 'number' && Number.isFinite(value))
-        : [];
-    const kalimatDasar = {
-        'AI-GENERATED': `Gambar ini terindikasi dibuat menggunakan AI. Probabilitas AI dari model adalah ${nilaiSkor.textContent}. Hasil ini merupakan prediksi, bukan bukti mutlak.`,
-        'AI-EDITED': `Gambar ini mendapat kategori AI-EDITED dari AI Engine dengan probabilitas AI ${nilaiSkor.textContent}. Kategori ini mengikuti verdict engine dan bukan bukti mutlak tentang proses pengeditan.`,
-        REAL: `Gambar ini terindikasi sebagai gambar asli (Human/Real). Probabilitas AI yang diberikan model adalah ${nilaiSkor.textContent}. Hasil ini bukan jaminan bahwa gambar pasti diambil menggunakan kamera atau tidak pernah diedit.`,
-        UNCERTAIN: `Hasil Deteksi Gambar belum cukup meyakinkan. AI Engine memberikan probabilitas AI ${nilaiSkor.textContent}; disarankan melakukan pemeriksaan tambahan.`,
-    }[payload.result_label];
-
-    const penjelasan = [kalimatDasar];
-    if (typeof evidence.threshold === 'number') {
-        penjelasan.push(`Threshold AI Engine: ${(evidence.threshold * 100).toFixed(2)}%.`);
-    }
-    if (typeof evidence.low_threshold === 'number') {
-        penjelasan.push(`Batas bawah rentang uncertain: ${(evidence.low_threshold * 100).toFixed(2)}%.`);
-    }
-    if (
-        payload.result_label === 'AI-GENERATED'
-        && evidence.metadata_says_ai !== true
-        && typeof evidence.threshold === 'number'
-        && scoreAI >= evidence.threshold
-    ) {
-        penjelasan.push('Skor probabilitas AI mencapai threshold yang digunakan engine.');
-    } else if (
-        payload.result_label === 'REAL'
-        && typeof evidence.low_threshold === 'number'
-        && scoreAI <= evidence.low_threshold
-    ) {
-        penjelasan.push('Skor probabilitas AI berada pada atau di bawah batas bawah engine, yang mendukung verdict REAL.');
-    } else if (
-        payload.result_label === 'UNCERTAIN'
-        && typeof evidence.low_threshold === 'number'
-        && typeof evidence.threshold === 'number'
-        && scoreAI > evidence.low_threshold
-        && scoreAI < evidence.threshold
-    ) {
-        penjelasan.push('Skor berada di antara batas bawah dan threshold engine, sehingga hasil masuk rentang uncertain.');
-    }
-    if (typeof evidence.basis === 'string' && evidence.basis.trim() !== '') {
-        penjelasan.push(`Dasar yang dilaporkan AI Engine: ${evidence.basis}`);
-    }
-    if (evidence.metadata_says_ai === true) {
-        penjelasan.push('Metadata provenance yang diperiksa AI Engine mendukung indikasi AI.');
-    }
-    if (typeof evidence.metadata_generator === 'string' && evidence.metadata_generator.trim() !== '') {
-        penjelasan.push(`Generator pada metadata: ${evidence.metadata_generator}.`);
-    }
-    if (modelScores.length > 1) {
-        const scores = modelScores.map(([, value]) => value);
-        const minScore = Math.min(...scores);
-        const maxScore = Math.max(...scores);
-        penjelasan.push(
-            `Skor antar-model bervariasi dari ${(minScore * 100).toFixed(2)}% hingga ${(maxScore * 100).toFixed(2)}%.`,
-        );
-    }
+    const analysisExplanation = typeof payload.analysis_explanation === 'string'
+        ? payload.analysis_explanation
+        : '';
 
     const judulPenjelasan = document.createElement('h3');
     judulPenjelasan.className = 'judul-keterangan-analisis';
     judulPenjelasan.textContent = 'Mengapa Gambar Ini Terdeteksi Demikian?';
-    const bagianPenjelasan = buatBagianKeterangan('Penjelasan berdasarkan hasil AI Engine', penjelasan.join(' '));
-    const bagianPerModel = modelScores.length
-        ? buatBagianKeterangan(
-            'Skor dari setiap model',
-            modelScores.map(([name, value]) => `${name}: ${(value * 100).toFixed(2)}%`).join(' · '),
-        )
-        : null;
+    const bagianPenjelasan = buatBagianKeterangan(
+        'Hasil Analisis',
+        analysisExplanation || 'Penjelasan hasil tidak tersedia untuk analisis ini.',
+    );
 
     hasilAnalisis?.replaceChildren(
         heading,
@@ -305,7 +246,6 @@ const tampilkanPrediksi = (payload) => {
         skor,
         judulPenjelasan,
         bagianPenjelasan,
-        ...(bagianPerModel ? [bagianPerModel] : []),
     );
     if (hasilAnalisis) hasilAnalisis.hidden = false;
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;

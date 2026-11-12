@@ -192,10 +192,14 @@
             </div>
         </div>
 
-        <div class="peringatan-detail-riwayat">
-            @include('icon', ['name' => 'info', 'class' => 'icon-sm'])
-            Jangan anggap hasil sebagai bukti pasti mengenai asal atau riwayat gambar.
-        </div>
+        <section
+            class="bagian-keterangan-analisis hasil-analisis-riwayat"
+            id="hasil-analisis-riwayat"
+            hidden
+        >
+            <h4>Hasil Analisis</h4>
+            <p id="teks-hasil-analisis-riwayat"></p>
+        </section>
 
         <button
             type="button"

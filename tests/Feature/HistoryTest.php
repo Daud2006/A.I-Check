@@ -55,6 +55,50 @@ class HistoryTest extends TestCase
             ->assertHeader('x-content-type-options', 'nosniff');
     }
 
+    public function test_history_includes_the_saved_analysis_explanation(): void
+    {
+        $user = User::factory()->create();
+        $analysis = $this->createAnalysis($user, 'explained.png', 'AI-GENERATED', 0.7993);
+        $analysis->analysis_explanation = 'Hasil analisis tersimpan untuk gambar ini.';
+        $analysis->save();
+
+        $this->actingAs($user)
+            ->get(route('history'))
+            ->assertOk()
+            ->assertSee('analysisExplanation')
+            ->assertSee('Hasil analisis tersimpan untuk gambar ini.')
+            ->assertDontSee('Jangan anggap hasil sebagai bukti pasti mengenai asal atau riwayat gambar.');
+    }
+
+    public function test_old_history_gets_an_explanation_from_its_saved_verdict_and_score(): void
+    {
+        $user = User::factory()->create();
+        $this->createAnalysis($user, 'old.png', 'REAL', 0.08);
+
+        $this->actingAs($user)
+            ->get(route('history'))
+            ->assertOk()
+            ->assertSee('Hasil analisis lebih mendukung gambar kategori REAL')
+            ->assertSee('Estimasi probabilitas AI gabungan: 8.00%.');
+    }
+
+    public function test_legacy_history_labels_are_normalized_for_display_without_changing_saved_data(): void
+    {
+        $user = User::factory()->create();
+        $analysis = $this->createAnalysis($user, 'legacy.png', 'artificial', 0.91);
+
+        $this->actingAs($user)
+            ->get(route('history'))
+            ->assertOk()
+            ->assertSee('&quot;label&quot;:&quot;AI-GENERATED&quot;', false)
+            ->assertSee('analysisExplanation');
+
+        $this->assertDatabaseHas('image_analyses', [
+            'id' => $analysis->id,
+            'result_label' => 'artificial',
+        ]);
+    }
+
     public function test_guest_cannot_view_or_delete_history(): void
     {
         $this->get(route('history'))->assertRedirect(route('auth'));
@@ -171,8 +215,7 @@ class HistoryTest extends TestCase
         string $filename,
         ?string $label = null,
         ?float $score = null,
-    ): ImageAnalysis
-    {
+    ): ImageAnalysis {
         $analysis = new ImageAnalysis([
             'original_filename' => $filename,
             'image_path' => 'users/test/'.$filename,

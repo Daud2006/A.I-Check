@@ -19,6 +19,12 @@ const formulirLogout = document.querySelectorAll('form[data-confirm-logout]');
 
 let konfirmasiLogoutTerbuka = false;
 let formulirLogoutDisetujui = null;
+const kelasPopupAutentikasi = {
+    popup: 'swal-riwayat-popup',
+    title: 'swal-riwayat-title',
+    htmlContainer: 'swal-riwayat-text',
+    confirmButton: 'swal-riwayat-confirm',
+};
 
 checkboxPersetujuan?.addEventListener('invalid', () => {
     checkboxPersetujuan.setCustomValidity(
@@ -32,6 +38,28 @@ checkboxPersetujuan?.addEventListener('change', () => {
     if (pesanPersetujuan) pesanPersetujuan.hidden = checkboxPersetujuan.checked;
 });
 
+if (document.body?.dataset.loginSuccess === 'true') {
+    Swal.fire({
+        title: 'Berhasil Masuk',
+        text: 'Login berhasil. Anda kini dapat melanjutkan menggunakan akun A.I-Check.',
+        icon: 'success',
+        confirmButtonText: 'Lanjutkan',
+        buttonsStyling: false,
+        customClass: kelasPopupAutentikasi,
+    });
+}
+
+if (document.body?.dataset.registrationSuccess === 'true') {
+    Swal.fire({
+        title: 'Akun Berhasil Dibuat',
+        text: 'Akun Anda sudah siap. Silakan masuk menggunakan email dan kata sandi yang baru Anda daftarkan.',
+        icon: 'success',
+        confirmButtonText: 'Masuk',
+        buttonsStyling: false,
+        customClass: kelasPopupAutentikasi,
+    });
+}
+
 if (document.body?.dataset.logoutSuccess === 'true') {
     Swal.fire({
         title: 'Berhasil Keluar',
@@ -41,11 +69,7 @@ if (document.body?.dataset.logoutSuccess === 'true') {
         timerProgressBar: true,
         showConfirmButton: false,
         buttonsStyling: false,
-        customClass: {
-            popup: 'swal-riwayat-popup',
-            title: 'swal-riwayat-title',
-            htmlContainer: 'swal-riwayat-text',
-        },
+        customClass: kelasPopupAutentikasi,
     });
 }
 

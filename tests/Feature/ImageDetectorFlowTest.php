@@ -47,12 +47,17 @@ class ImageDetectorFlowTest extends TestCase
             ->assertJsonPath('engine_evidence.basis', 'pixel ensemble is between the operating points')
             ->assertJsonPath('engine_evidence.threshold', 0.7241)
             ->assertJsonPath('engine_evidence.low_threshold', 0.5272)
-            ->assertJsonPath('engine_evidence.per_model.detector-a', 0.61);
+            ->assertJsonPath('engine_evidence.per_model.detector-a', 0.61)
+            ->assertJsonPath(
+                'analysis_explanation',
+                'Hasil analisis belum cukup kuat untuk menentukan apakah gambar kemungkinan dibuat menggunakan AI atau termasuk kategori REAL/Human. Estimasi probabilitas AI gabungan: 60.72%.',
+            );
 
         $analysis = ImageAnalysis::query()->findOrFail($response->json('id'));
         $this->assertSame('completed', $analysis->status);
         $this->assertSame('UNCERTAIN', $analysis->result_label);
         $this->assertEqualsWithDelta(0.6072, (float) $analysis->confidence_score, 0.000001);
+        $this->assertSame($response->json('analysis_explanation'), $analysis->analysis_explanation);
         Storage::disk('image-analyses')->assertExists($analysis->image_path);
 
         Http::assertSent(fn (HttpRequest $request): bool => $request->method() === 'POST'

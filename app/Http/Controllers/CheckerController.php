@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\ImageClassificationException;
 use App\Models\ImageAnalysis;
 use App\Models\User;
+use App\Services\ImageAnalysisExplanation;
 use App\Services\LocalAiDetector;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\View\View;
@@ -23,6 +24,10 @@ use Throwable;
 
 class CheckerController extends Controller
 {
+    public function __construct(
+        private readonly ImageAnalysisExplanation $analysisExplanation,
+    ) {}
+
     private const UPLOAD_MAX_KILOBYTES = 10240;
 
     private const STORAGE_DISK = 'image-analyses';
@@ -206,6 +211,11 @@ class CheckerController extends Controller
             $analysis->result_label = $prediction['label'];
             $analysis->confidence_score = $prediction['score'];
             $analysis->model_name = $prediction['model'];
+            $analysis->analysis_explanation = $this->analysisExplanation->build(
+                $prediction['label'],
+                (float) $prediction['score'],
+                is_array($prediction['evidence'] ?? null) ? $prediction['evidence'] : [],
+            );
             $analysis->status = 'completed';
 
             if ($user instanceof User) {
@@ -264,6 +274,7 @@ class CheckerController extends Controller
             'status' => $analysis->status,
             'result_label' => $analysis->result_label,
             'confidence_score' => (float) $analysis->confidence_score,
+            'analysis_explanation' => $analysis->analysis_explanation,
             'model_name' => $analysis->model_name,
             'engine_evidence' => $prediction['evidence'] ?? [],
             'message' => 'Analisis gambar selesai. Hasil merupakan prediksi model, bukan kepastian.',

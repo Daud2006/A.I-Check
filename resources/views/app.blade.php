@@ -10,7 +10,11 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body data-logout-success="{{ session()->pull('logout_success', false) ? 'true' : 'false' }}">
+<body
+    data-login-success="{{ session()->pull('login_success', false) ? 'true' : 'false' }}"
+    data-registration-success="{{ session()->pull('registration_success', false) ? 'true' : 'false' }}"
+    data-logout-success="{{ session()->pull('logout_success', false) ? 'true' : 'false' }}"
+>
     <div class="kerangka-situs">
         {{-- Header --}}
         <header class="bagian-header">
@@ -78,9 +82,6 @@
         </header>
 
         <main class="konten-utama">
-            @if (session('status') && !request()->routeIs('profile'))
-                <p role="status" aria-live="polite">{{ session('status') }}</p>
-            @endif
             @yield('content')
         </main>
 
@@ -97,7 +98,7 @@
 
     {{-- Modal masuk dan daftar. --}}
     <div class="modal-otorisasi" id="modal-otorisasi" aria-hidden="true"
-        data-auth-initial-mode="{{ request()->routeIs('auth') && request()->query('mode') === 'register' ? 'register' : session('auth_mode', 'login') }}"
+        data-auth-initial-mode="{{ request()->routeIs('auth') && in_array(request()->query('mode'), ['login', 'register'], true) ? request()->query('mode') : session('auth_mode', 'login') }}"
         data-auth-open-on-load="{{ (request()->routeIs('auth') && in_array(request()->query('mode'), ['login', 'register'], true)) || (session()->has('auth_mode') && $errors->any()) ? 'true' : 'false' }}">
         <div class="panel-otorisasi" role="dialog" aria-modal="true" aria-labelledby="judul-modal">
             <div class="kepala-modal">
@@ -117,7 +118,7 @@
                 @endif
                 <label class="kolom-formulir">
                     <span class="label-formulir">Email</span>
-                    <input class="form-control" type="email" name="email" value="{{ old('email') }}" required
+                    <input class="form-control" type="email" name="email" value="{{ old('email', session('registered_email')) }}" required
                         autocomplete="email" placeholder="nama@email.com">
                 </label>
                 <label class="kolom-formulir">

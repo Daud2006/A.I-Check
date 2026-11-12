@@ -14,7 +14,7 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_creates_a_hashed_regular_user_and_authenticates_them(): void
+    public function test_registration_creates_a_hashed_regular_user_and_redirects_to_login(): void
     {
         Notification::fake();
 
@@ -31,8 +31,10 @@ class AuthenticationTest extends TestCase
 
         $this->assertTrue(Hash::check('Password123', $user->password));
         $this->assertSame('user', $user->role);
-        $this->assertAuthenticatedAs($user);
-        $response->assertRedirect(route('home'));
+        $this->assertGuest();
+        $response->assertRedirect(route('auth', ['mode' => 'login']))
+            ->assertSessionHas('registration_success', true)
+            ->assertSessionHas('registered_email', 'contoh@example.test');
         $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => 'contoh@example.test']);
         Notification::assertNothingSent();
     }
@@ -109,7 +111,9 @@ class AuthenticationTest extends TestCase
         $this->post(route('login'), [
             'email' => 'login@example.test',
             'password' => 'Password123',
-        ])->assertRedirect(route('home'));
+        ])->assertRedirect(route('home'))
+            ->assertSessionHas('login_success', true)
+            ->assertSessionMissing('status');
 
         $this->assertAuthenticatedAs($user);
         $this->assertNotSame($originalSessionId, session()->getId());
@@ -158,6 +162,48 @@ class AuthenticationTest extends TestCase
         $this->get(route('home'))
             ->assertSee('data-logout-success="false"', false)
             ->assertDontSee('Anda telah keluar.');
+    }
+
+    public function test_login_success_is_signaled_once_for_the_sweetalert(): void
+    {
+        User::factory()->create([
+            'email' => 'success@example.test',
+            'password' => 'Password123',
+        ]);
+
+        $this->post(route('login'), [
+            'email' => 'success@example.test',
+            'password' => 'Password123',
+        ])
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('login_success', true);
+
+        $this->get(route('home'))
+            ->assertSee('data-login-success="true"', false)
+            ->assertDontSee('Login berhasil. Anda kini dapat melanjutkan menggunakan akun A.I-Check.');
+
+        $this->get(route('home'))
+            ->assertSee('data-login-success="false"', false);
+    }
+
+    public function test_registration_redirects_to_login_with_the_registered_email_prefilled(): void
+    {
+        $this->post(route('register'), [
+            'name' => 'Pengguna Login',
+            'email' => 'login@example.test',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+            'terms' => '1',
+        ])
+            ->assertRedirect(route('auth', ['mode' => 'login']))
+            ->assertSessionHas('registration_success', true);
+
+        $this->get(route('auth', ['mode' => 'login']))
+            ->assertOk()
+            ->assertSee('data-auth-initial-mode="login"', false)
+            ->assertSee('data-auth-open-on-load="true"', false)
+            ->assertSee('data-registration-success="true"', false)
+            ->assertSee('value="login@example.test"', false);
     }
 
     public function test_private_pages_redirect_guests_and_checker_remains_public(): void

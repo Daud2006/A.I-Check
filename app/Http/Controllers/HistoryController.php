@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ImageAnalysis;
+use App\Services\ImageAnalysisExplanation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,7 @@ class HistoryController extends Controller
 {
     private const STORAGE_DISK = 'image-analyses';
 
-    public function index(Request $request)
+    public function index(Request $request, ImageAnalysisExplanation $explanations)
     {
         $analyses = $request->user()
             ->imageAnalyses()
@@ -24,10 +25,19 @@ class HistoryController extends Controller
                 'id' => $analysis->getKey(),
                 'name' => $analysis->original_filename,
                 'status' => $analysis->status,
-                'label' => $analysis->result_label,
+                'label' => $explanations->normalizeLabel($analysis->result_label),
                 'score' => $analysis->confidence_score === null
                     ? null
                     : (float) $analysis->confidence_score,
+                'analysisExplanation' => $analysis->status === 'completed'
+                    ? ($analysis->analysis_explanation
+                        ?: $explanations->build(
+                            $analysis->result_label,
+                            $analysis->confidence_score === null
+                                ? null
+                                : (float) $analysis->confidence_score,
+                        ))
+                    : null,
                 'date' => $analysis->created_at?->toIso8601String(),
                 'imageUrl' => $this->imageUrl($analysis),
             ])

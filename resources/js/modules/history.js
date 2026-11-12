@@ -224,6 +224,14 @@ if (daftarRiwayat) {
         document.getElementById('id-detail-riwayat').textContent =
             `#${String(item.id).slice(-6)}`;
 
+        const explanationSection = document.getElementById('hasil-analisis-riwayat');
+        const explanationText = document.getElementById('teks-hasil-analisis-riwayat');
+        const explanation = typeof item.analysisExplanation === 'string'
+            ? item.analysisExplanation.trim()
+            : '';
+        explanationText.textContent = explanation;
+        explanationSection.hidden = explanation === '';
+
         const gambar = document.getElementById('gambar-detail-riwayat');
         const pesanGambar = document.getElementById('pesan-gambar-detail-riwayat');
 
