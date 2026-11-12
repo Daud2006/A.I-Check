@@ -39,14 +39,7 @@ class CheckerController extends Controller
 
     public function index(Request $request): View
     {
-        $user = $request->user();
-
-        if ($user instanceof User) {
-            $quotaMessage = $user->hasPremiumAccess()
-                ? 'Akun Premium dapat melakukan Deteksi Gambar tanpa batas harian.'
-                : 'Akun Free memiliki 3 kesempatan Deteksi Gambar per hari. Sisa hari ini: '
-                    .max(0, self::FREE_DAILY_LIMIT - $this->dailyUsageCount($user)).'.';
-        } else {
+        if (! $request->user() instanceof User) {
             $guestId = $this->guestIdentifier($request);
             if ($guestId === null) {
                 $guestId = (string) Str::uuid();
@@ -62,12 +55,9 @@ class CheckerController extends Controller
                     'lax',
                 ));
             }
-
-            $quotaMessage = 'Pengunjung memiliki 2 kesempatan Deteksi Gambar total. Sisa kesempatan: '
-                .max(0, self::GUEST_LIMIT - (int) Cache::store('database')->get($this->guestUsageKey($guestId), 0)).'.';
         }
 
-        return view('deteksi.index', ['quotaMessage' => $quotaMessage]);
+        return view('deteksi.index');
     }
 
     public function store(Request $request, LocalAiDetector $classifier): JsonResponse
@@ -401,9 +391,9 @@ class CheckerController extends Controller
             abort(404);
         }
 
-        return $disk->download($analysis->image_path, 'image', [
+        return $disk->response($analysis->image_path, 'image', [
             'Content-Type' => $analysis->mime_type,
             'X-Content-Type-Options' => 'nosniff',
-        ]);
+        ], 'inline');
     }
 }

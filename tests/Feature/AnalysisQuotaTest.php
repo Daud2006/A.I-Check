@@ -43,7 +43,7 @@ class AnalysisQuotaTest extends TestCase
 
         $this->get(route('checker'))
             ->assertOk()
-            ->assertSee('Sisa kesempatan: 0');
+            ->assertDontSee('Sisa kesempatan: 0');
 
         $this->guestUpload($guestId)
             ->assertStatus(429)
@@ -203,13 +203,21 @@ class AnalysisQuotaTest extends TestCase
             ->assertJsonPath('engine_evidence.basis', 'pixel ensemble (moderate, 2 models)');
     }
 
-    public function test_checker_page_shows_guest_quota_and_subscription_action(): void
+    public function test_checker_page_hides_quota_summary_and_keeps_subscription_action(): void
     {
         $this->get(route('checker'))
             ->assertOk()
-            ->assertSee('Pengunjung memiliki 2 kesempatan Deteksi Gambar total.')
+            ->assertDontSee('Pengunjung memiliki 2 kesempatan Deteksi Gambar total.')
             ->assertSee('data-subscribe-open', false)
             ->assertSee('Deteksi Gambar');
+    }
+
+    public function test_free_user_checker_page_does_not_show_remaining_quota(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('checker'))
+            ->assertOk()
+            ->assertDontSee('Akun Free memiliki 3 kesempatan Deteksi Gambar per hari.');
     }
 
     public function test_registration_mode_can_be_opened_from_the_guest_limit_link(): void

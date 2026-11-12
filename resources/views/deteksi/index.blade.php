@@ -10,7 +10,6 @@
                 <span class="eyebrow">@include('icon', ['name' => 'spark', 'class' => 'icon-sm'])AI Image Checker</span>
                 <h1 class="judul-pemeriksaan" id="judul-pemeriksaan">Deteksi Gambar</h1>
                 <p class="deskripsi-pemeriksaan">Unggah gambar dengan aman untuk mendapatkan hasil analisis model AI dalam empat kategori. Hasil merupakan estimasi dan bukan bukti pasti.</p>
-                <p class="informasi-kuota-deteksi">{{ $quotaMessage }}</p>
             </div>
 
             <p class="pesan-checker" id="pesan-checker" role="alert" aria-live="polite" hidden></p>

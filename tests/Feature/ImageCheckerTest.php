@@ -389,7 +389,7 @@ class ImageCheckerTest extends TestCase
         Process::assertNothingRan();
     }
 
-    public function test_owner_can_view_status_and_download_private_image(): void
+    public function test_owner_can_view_status_and_preview_private_image_inline(): void
     {
         Storage::fake('image-analyses');
         $user = User::factory()->create();
@@ -410,7 +410,7 @@ class ImageCheckerTest extends TestCase
 
         $this->get(route('checker.analyses.image', $analysisId))
             ->assertOk()
-            ->assertHeader('content-disposition', 'attachment; filename=image')
+            ->assertHeader('content-disposition', 'inline; filename=image')
             ->assertHeader('x-content-type-options', 'nosniff');
     }
 

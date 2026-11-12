@@ -40,6 +40,21 @@ class HistoryTest extends TestCase
             ->assertSee('Memuat riwayat analisis...');
     }
 
+    public function test_owner_can_load_history_image_preview_inline(): void
+    {
+        Storage::fake('image-analyses');
+        $user = User::factory()->create();
+        $analysis = $this->createAnalysis($user, 'preview.png');
+        Storage::disk('image-analyses')->put($analysis->image_path, 'image');
+
+        $this->actingAs($user)
+            ->get(route('checker.analyses.image', $analysis->id))
+            ->assertOk()
+            ->assertHeader('content-disposition', 'inline; filename=image')
+            ->assertHeader('content-type', 'image/png')
+            ->assertHeader('x-content-type-options', 'nosniff');
+    }
+
     public function test_guest_cannot_view_or_delete_history(): void
     {
         $this->get(route('history'))->assertRedirect(route('auth'));
