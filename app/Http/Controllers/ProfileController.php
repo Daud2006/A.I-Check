@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -16,17 +15,7 @@ class ProfileController extends Controller
         $now = now();
 
         $hasPremiumAccess = $user->subscriptions()
-            ->where('status', 'active')
-            ->whereNull('cancelled_at')
-            ->where(function (Builder $query) use ($now): void {
-                $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
-            })
-            ->where(function (Builder $query) use ($now): void {
-                $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
-            })
-            ->whereHas('plan', function (Builder $query): void {
-                $query->where('is_active', true)->where('price', '>', 0);
-            })
+            ->currentlyEntitled($now)
             ->exists();
 
         return view('beranda.profil', [

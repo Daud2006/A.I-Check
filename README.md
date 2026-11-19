@@ -1,5 +1,54 @@
 # A.I-Check
 
+## Menyalakan detector lokal (Windows / Laragon)
+
+Detector ada di `aidetect-engine` dan memproses gambar pada mesin lokal. Pada
+penyiapan pertama, unduh hanya checkpoint ensemble `models_permissive` yang
+diperlukan; unduhan bobot berasal dari Hugging Face Hub, bukan dari layanan inference.
+Setelah unduhan, semua inference berjalan offline:
+
+```powershell
+Set-Location .\aidetect-engine
+if (-not (Test-Path .\.venv-aidetect\Scripts\python.exe)) {
+    py -3.12 -m venv .venv-aidetect
+}
+$python = Resolve-Path .\.venv-aidetect\Scripts\python.exe
+$env:HF_HOME = Join-Path (Get-Location) '.hf_cache'
+$env:HF_HUB_DOWNLOAD_TIMEOUT = '600'
+& $python -m pip install -e '.[api]'
+& $python scripts\fetch_models.py --ensemble-only --model-dir models_permissive
+```
+
+Setelah semua checkpoint berhasil diunduh, jalankan API pada terminal terpisah
+dari root proyek:
+
+```powershell
+$python = Resolve-Path .\aidetect-engine\.venv-aidetect\Scripts\python.exe
+$env:HF_HOME = (Resolve-Path .\aidetect-engine\.hf_cache).Path
+$env:HF_HUB_OFFLINE = '1'
+$env:AIDETECT_MODEL_DIR = (Resolve-Path .\aidetect-engine\models_permissive).Path
+$env:AIDETECT_OPERATING_POINT = 'fpr5'
+$env:AIDETECT_THREADS = '4'
+$env:AIDETECT_MAX_BYTES = '10485760'
+$env:AIDETECT_MAX_FILES = '1'
+& $python -m uvicorn aidetect.api:app --app-dir .\aidetect-engine --host 127.0.0.1 --port 8766 --workers 1
+```
+
+Biarkan proses API berjalan saat aplikasi digunakan. Untuk antrean, `composer
+run dev` menyalakan Laravel, Vite, dan worker yang memproses antrean `premium`
+serta `default` (Free). Sebagai alternatif, siapkan konfigurasi Laravel sekali
+(jika belum dilakukan) dan jalankan worker secara terpisah:
+
+```powershell
+php artisan analyses:work
+```
+
+Pastikan `.env` memakai `QUEUE_CONNECTION=database`, database sudah dimigrasikan
+dengan tabel `jobs`, dan worker hanya dijalankan satu kali untuk development
+(gunakan `composer run dev` atau perintah terpisah di atas, bukan keduanya
+sekaligus). Jangan gunakan `queue:listen` dengan antrean `default` saja karena
+pekerjaan Premium masuk ke antrean `premium`. Hentikan proses dengan `Ctrl+C`.
+
 A.I-Check adalah aplikasi web untuk mengunggah gambar dan melihat prediksi dari
 layanan deteksi AI. Pengguna dapat membuat akun, menjalankan pemeriksaan, lalu
 melihat dan menghapus riwayat analisis milik akunnya.
@@ -11,10 +60,10 @@ melihat dan menghapus riwayat analisis milik akunnya.
 ## Teknologi
 
 - Laravel 12 dan PHP 8.2 atau lebih baru untuk aplikasi web dan API internal.
+- Python 3.12 untuk engine deteksi lokal.
 - SQLite sebagai koneksi database bawaan; konfigurasi Laravel dapat diarahkan
   ke database lain dengan mengatur variabel `DB_*`.
-- Layanan deteksi lokal yang dikonfigurasi melalui `AI_DETECTOR_URL` untuk
-  memproses gambar melalui endpoint HTTP.
+- Model permissive terunduh satu kali dan tersedia di `aidetect-engine/.hf_cache`.
 - JavaScript, Vite 7, Tailwind CSS 4, dan Laravel Vite Plugin untuk aset
   frontend.
 
@@ -92,26 +141,28 @@ terpisah.
 
 ## Konfigurasi layanan deteksi
 
-Laravel mengirim gambar tersimpan ke `AI_DETECTOR_URL` dengan default
-`http://127.0.0.1:8000`; endpoint yang dipanggil adalah `/detect`. Atur
-`AI_DETECTOR_URL`, `AI_DETECTOR_CONNECT_TIMEOUT`, dan `AI_DETECTOR_TIMEOUT`
-melalui environment server-side sesuai layanan yang digunakan. Jangan
-mengekspos endpoint ke browser atau menaruh kredensial layanan di frontend.
+Laravel mengirim gambar tersimpan hanya ke `http://127.0.0.1:8766` secara
+default. Klien membatasi URL ke loopback `127.0.0.1`, menolak redirect, lalu
+memeriksa `/health` dan `/info` sebelum memanggil `/detect`. API harus
+menunjukkan bahwa model sudah dimuat dan ensemble berlisensi permissive yang
+diharapkan aktif. Atur `AI_DETECTOR_URL`, `AI_DETECTOR_CONNECT_TIMEOUT`,
+`AI_DETECTOR_HEALTH_TIMEOUT`, dan `AI_DETECTOR_TIMEOUT` melalui environment
+server-side; jangan mengekspos endpoint ke browser.
 
-Layanan harus menerima unggahan multipart pada field `files` dan
-mengembalikan JSON dengan `results[0].verdict` dan `results[0].p_ai`.
-`verdict` harus salah satu dari `AI-GENERATED`, `AI-EDITED`, `REAL`, atau
-`UNCERTAIN`; `p_ai` harus berupa angka antara 0 dan 1. Nilai `p_ai` disimpan
-Laravel di field `confidence_score` untuk kompatibilitas dan ditampilkan
-sebagai **Probabilitas AI**. Endpoint worker di `ai-service/worker.py`
-menggunakan kontrak berbeda dan tidak langsung kompatibel dengan endpoint ini.
+Endpoint `/detect` menerima multipart field `files`. Laravel memvalidasi
+`results[0].verdict`, `results[0].p_ai`, threshold, dan skor seluruh anggota
+ensemble. Verdict (`AI-GENERATED`, `AI-EDITED`, `REAL`, atau `UNCERTAIN`) serta
+`p_ai` tersimpan langsung; probabilitas tidak dibalik. Rincian basis, operating
+point, ambang, skor per model, metadata, dan versi model disimpan terpisah pada
+`prediction_details`. Kolom baru nullable sehingga analisis lama tetap dapat
+dibaca.
 
 ## Menjalankan aplikasi
 
 Setelah dependency terpasang, `.env` dikonfigurasi, dan migrasi selesai:
 
-1. Pastikan layanan deteksi yang dikonfigurasi melalui `AI_DETECTOR_URL`
-   berjalan dan dapat dijangkau dari PHP.
+1. Pastikan API lokal berjalan pada `127.0.0.1:8766` dengan ensemble
+   `models_permissive` dan mode offline.
 2. Dari root repositori, jalankan server Laravel:
 
    ```powershell
@@ -151,9 +202,10 @@ rentang `p_ai` dari respons.
 - Endpoint gambar dan riwayat memeriksa kepemilikan analisis terhadap akun
   yang sedang masuk. File yang tidak lagi direferensikan dihapus saat item
   riwayat dihapus, jika pembersihan berhasil.
-- Laravel mengirim file gambar privat ke layanan pada `AI_DETECTOR_URL`.
-  Default-nya loopback; jika URL diubah, pastikan layanan tujuan diizinkan
-  menerima data tersebut dan gunakan transport yang sesuai dengan lingkungan.
+- Laravel hanya mengirim file gambar privat ke `127.0.0.1`; konfigurasi lain
+  selain loopback ditolak dan redirect HTTP dinonaktifkan. Bobot model diunduh
+  satu kali dari Hugging Face Hub saat pemasangan; inference berjalan dengan
+  `HF_HUB_OFFLINE=1` dan tidak mengirim gambar ke layanan inference pihak ketiga.
 - File gambar, database, log, dan backup dapat berisi data sensitif. Kebijakan
   retensi, backup, kontrol akses mesin, TLS/proxy, dan pengamanan deployment
   tetap menjadi tanggung jawab operator. Dokumentasi ini tidak menjamin
@@ -175,10 +227,11 @@ git diff --check
 
 ### Layanan deteksi tidak dapat dihubungi atau gagal memproses
 
-- Pastikan layanan aktif dan `AI_DETECTOR_URL` menunjuk ke host serta port
-  yang benar. Default-nya `http://127.0.0.1:8000`.
-- Pastikan layanan menyediakan `POST /detect`, menerima multipart field
-  `files`, dan merespons sesuai format `results[0]` yang dijelaskan di atas.
+- Pastikan API aktif pada `127.0.0.1:8766`, seluruh model sudah dimuat, dan
+  `/info` menunjukkan ensemble `models_permissive` dengan lisensi yang sesuai.
+- Pastikan proses dijalankan dari konfigurasi engine yang sama dengan
+  `AIDETECT_MODEL_DIR=aidetect-engine/models_permissive` dan
+  `HF_HUB_OFFLINE=1`.
 - Periksa log Laravel dan log layanan untuk diagnosis; jangan mencatat atau
   membagikan gambar sensitif maupun kredensial.
 - Sesuaikan timeout koneksi dan request melalui `AI_DETECTOR_CONNECT_TIMEOUT`
@@ -189,7 +242,8 @@ git diff --check
 - Bandingkan nama variabel yang diperlukan dengan `.env.example` dan
   `config/services.php`; jangan menyalin secret nyata ke contoh atau repositori.
 - Pastikan nilai database dan file SQLite benar sebelum migrasi. Untuk
-  detektor, cocokkan URL dan timeout dengan konfigurasi layanan.
+  detektor, gunakan loopback `127.0.0.1` dan cocokkan timeout pada
+  `AI_DETECTOR_*`.
 - Setelah mengubah environment, restart proses terkait dan periksa cache
   konfigurasi Laravel bila digunakan.
 

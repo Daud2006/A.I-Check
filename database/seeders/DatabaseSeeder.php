@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use LogicException;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,6 +16,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new LogicException('Default accounts are only available in local and testing environments.');
+        }
+
         foreach ([
             [
                 'name' => 'Administrator',
@@ -30,6 +35,11 @@ class DatabaseSeeder extends Seeder
             ],
         ] as $account) {
             $user = User::query()->firstOrNew(['email' => $account['email']]);
+
+            if ($user->exists) {
+                continue;
+            }
+
             $user->name = $account['name'];
             $user->password = $account['password'];
             $user->role = $account['role'];

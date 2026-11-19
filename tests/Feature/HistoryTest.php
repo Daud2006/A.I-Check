@@ -19,6 +19,13 @@ class HistoryTest extends TestCase
         $other = User::factory()->create();
 
         $ownAnalysis = $this->createAnalysis($owner, 'own.png', 'artificial', 0.91);
+        $ownAnalysis->prediction_details = [
+            'basis' => 'pixel ensemble',
+            'operating_point' => 'fpr5',
+            'per_model' => ['commforensics384' => 0.91],
+        ];
+        $ownAnalysis->save();
+        $this->createAnalysis($owner, 'legacy.png', 'human', 0.82);
         $this->createAnalysis($other, 'other.png', 'human', 0.82);
         Storage::disk('image-analyses')->put($ownAnalysis->image_path, 'image');
 
@@ -26,6 +33,8 @@ class HistoryTest extends TestCase
             ->get(route('history'))
             ->assertOk()
             ->assertSee('own.png')
+            ->assertSee('legacy.png')
+            ->assertSee('pixel ensemble')
             ->assertDontSee('other.png')
             ->assertSee('imageUrl')
             ->assertSee('history/__ID__');

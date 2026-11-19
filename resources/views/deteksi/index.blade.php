@@ -7,9 +7,23 @@
     <section class="halaman-pemeriksaan" aria-labelledby="judul-pemeriksaan">
         <div class="container">
             <div class="judul-halaman-pemeriksaan">
-                <span class="eyebrow">@include('icon', ['name' => 'spark', 'class' => 'icon-sm'])AI Image Checker</span>
-                <h1 class="judul-pemeriksaan" id="judul-pemeriksaan">Periksa gambar Anda</h1>
-                <p class="deskripsi-pemeriksaan">Unggah gambar dengan aman untuk mendapatkan hasil analisis model AI dalam empat kategori. Hasil merupakan estimasi dan bukan bukti pasti.</p>
+                <h1 class="judul-pemeriksaan" id="judul-pemeriksaan">PERIKSA GAMBAR ANDA</h1>
+                @if ($quota)
+                    <p class="ringkasan-kuota" id="ringkasan-kuota"
+                        data-limit="{{ $quota['limit'] ?? 'unlimited' }}"
+                        data-used="{{ $quota['used'] }}">
+                        @if ($quota['limit'] === null)
+                            Kuota analisis: tanpa batas
+                        @else
+                            Kuota 7 hari berjalan: {{ $quota['used'] }} dari {{ $quota['limit'] }} analisis
+                            @if ($quota['resets_at'])
+                                <span>Penggunaan terlama berikutnya direset {{ \Illuminate\Support\Carbon::parse($quota['resets_at'])->translatedFormat('d M Y, H:i') }}.</span>
+                            @endif
+                        @endif
+                    </p>
+                @elseif (auth()->guest())
+                    <p class="ringkasan-kuota">Masuk untuk memeriksa gambar dan melihat kuota analisis Anda.</p>
+                @endif
             </div>
 
             <p class="pesan-checker" id="pesan-checker" role="alert" aria-live="polite" hidden></p>
@@ -17,13 +31,13 @@
             <div id="kotak-upload" class="kotak-upload">
                 <div class="area-upload" id="area-drop-gambar">
                     <span class="ikon-upload">@include('icon', ['name' => 'upload', 'style' => 'width:32px;height:32px'])</span>
-                    <h2 class="judul-upload">Tarik &amp; lepas gambar di sini</h2>
-                    <p class="deskripsi-upload">atau pilih gambar dari perangkat Anda</p>
+                    <h2 class="judul-upload">Upload Gambar</h2>
                     <button type="button" class="btn btn-light-blue tombol-utama" id="tombol-pilih-gambar">Pilih Gambar</button>
                     <p class="catatan-upload" id="petunjuk-format-gambar">JPEG, PNG, atau WebP · Maksimal 10 MB</p>
                     <input type="file" id="input-gambar" accept="image/png,image/jpeg,image/webp"
                         aria-label="Pilih gambar untuk dianalisis" aria-describedby="petunjuk-format-gambar"
                         data-upload-url="{{ route('checker.analyses.store') }}"
+                        data-status-url="{{ route('checker.analyses.show', ['analysisId' => '__ANALYSIS_ID__']) }}"
                         data-auth-url="{{ route('auth') }}" hidden>
                 </div>
             </div>

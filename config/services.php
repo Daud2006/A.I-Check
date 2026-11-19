@@ -35,26 +35,11 @@ return [
         ],
     ],
 
-    'huggingface' => [
-        'token' => env('HF_TOKEN'),
-        'image_model' => env('HF_IMAGE_MODEL', 'Organika/sdxl-detector'),
-        'timeout' => env('HF_IMAGE_TIMEOUT', 60),
-    ],
-
-    'local_ai_worker' => [
-        'enabled' => env('AI_WORKER_ENABLED', false),
-        'url' => env('AI_WORKER_URL', 'http://127.0.0.1:8765'),
-        'secret' => env('AI_WORKER_SECRET'),
-        'connect_timeout' => env('AI_WORKER_CONNECT_TIMEOUT', 2),
-        'health_timeout' => env('AI_WORKER_HEALTH_TIMEOUT', 3),
-        'timeout' => env('AI_WORKER_TIMEOUT', 50),
-        'subprocess_fallback' => env('AI_WORKER_SUBPROCESS_FALLBACK', false),
-    ],
-
     'ai_detector' => [
-    'url' => env('AI_DETECTOR_URL', 'http://127.0.0.1:8000'),
-    'connect_timeout' => env('AI_DETECTOR_CONNECT_TIMEOUT', 5),
-    'timeout' => env('AI_DETECTOR_TIMEOUT', 65),
+        'url' => env('AI_DETECTOR_URL', 'http://127.0.0.1:8766'),
+        'connect_timeout' => env('AI_DETECTOR_CONNECT_TIMEOUT', 5),
+        'health_timeout' => env('AI_DETECTOR_HEALTH_TIMEOUT', 5),
+        'timeout' => env('AI_DETECTOR_TIMEOUT', 65),
     ],
 
 ];

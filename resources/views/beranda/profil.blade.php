@@ -50,6 +50,7 @@
                             </dd>
                         </div>
                     </dl>
+                    <a href="{{ route('transactions.index') }}" class="btn btn-secondary">Riwayat transaksi</a>
                 </section>
             </div>
         </div>

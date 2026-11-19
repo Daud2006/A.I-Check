@@ -23,6 +23,7 @@ class ImageAnalysis extends Model
         return [
             'file_size' => 'integer',
             'confidence_score' => 'decimal:6',
+            'prediction_details' => 'array',
         ];
     }
 

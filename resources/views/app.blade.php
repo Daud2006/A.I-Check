@@ -91,10 +91,9 @@
         {{-- Footer --}}
         <footer class="bagian-footer">
             <div class="container isi-footer">
-                <div class="logo-website logo-footer"><span class="tanda-logo">@include('icon', ['name' =>
-                        'spark'])</span>A.I Check</div>
-                <p>© 2026 A.I Check</p>
-                <span class="daya-footer"><span class="titik-daya" aria-hidden="true"></span>Model AI lokal</span>
+                <div class="logo-website logo-footer"><span class="tanda-logo">@include('icon', ['name' =>'spark'])</span>A.I Check</div>
+                <p> Aplikasi Project</p>
+                <span class="daya-footer"><span class="titik-daya" aria-hidden="true"></span></span>
             </div>
         </footer>
     </div>
@@ -223,17 +222,6 @@
                 </button>
             </div>
 
-            <div class="subscribe-period" aria-label="Periode Premium">
-                <button type="button" class="subscribe-period-button is-active" data-subscribe-period="month"
-                    aria-pressed="true">
-                    Bulanan
-                </button>
-
-                <button type="button" class="subscribe-period-button" data-subscribe-period="year" aria-pressed="false">
-                    Tahunan <span>Hemat 28%</span>
-                </button>
-            </div>
-
             <div class="subscribe-plan-grid">
 
                 {{-- Paket Free --}}
@@ -271,31 +259,30 @@
                     <h3>Premium</h3>
 
                     <div class="subscribe-price">
-                        <strong id="subscribe-premium-price">Rp29.000</strong>
-                        <span id="subscribe-premium-period">/bulan</span>
+                        <strong>Harga sesuai paket</strong>
+                        <span>ditetapkan di database</span>
                     </div>
 
                     <p class="subscribe-plan-description">
-                        Pilihan untuk pengguna yang membutuhkan fitur lebih.
+                        Pilih paket dan periode langganan yang tersedia.
                     </p>
 
                     <ul class="subscribe-list">
-                        <li>Pemeriksaan tanpa batas harian</li>
-                        <li>Unggah file berukuran lebih dari 10 MB</li>
-                        <li>Akses fitur Premium tanpa kuota harian</li>
-                        <li>Pilihan langganan bulanan atau tahunan</li>
+                        <li>Harga ditentukan dari paket yang tersimpan</li>
+                        <li>Periode mengikuti konfigurasi paket</li>
+                        <li>Pembayaran diproses melalui Midtrans</li>
+                        <li>Premium aktif setelah pembayaran diverifikasi</li>
                     </ul>
 
-                    <button type="button" class="btn btn-primary subscribe-plan-button" id="subscribe-premium-select">
-                        Pilih Premium
-                    </button>
+                    <a href="{{ route('plans.index') }}" class="btn btn-primary subscribe-plan-button">
+                        Lihat paket dan harga
+                    </a>
                 </div>
 
             </div>
 
             <p class="subscribe-note">
-                Paket Premium masih berupa pratinjau. Pembayaran dan aktivasi
-                fitur Premium belum dihubungkan.
+                Harga dan status pembayaran diverifikasi dari database dan notifikasi server Midtrans.
             </p>
 
         </div>

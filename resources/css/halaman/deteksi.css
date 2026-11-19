@@ -18,6 +18,24 @@
     max-width: 680px;
     margin: 12px auto 0;
     color: #64748b;
+}
+.ringkasan-kuota {
+    display: grid;
+    gap: 4px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 16px auto 0;
+    padding: 10px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #fff;
+    color: #334155;
+    font-size: 14px;
+    text-align: center;
+}
+.ringkasan-kuota span {
+    color: #64748b;
+    font-size: 12px;
     font-size: 14px;
     line-height: 1.7;
 }

@@ -9,16 +9,7 @@
     <div class="container">
         <div class="kepala-halaman-riwayat">
             <div>
-                <span class="eyebrow">
-                    @include('icon', ['name' => 'clock', 'class' => 'icon-sm'])
-                    Aktivitas Anda
-                </span>
-
                 <h1 class="judul-halaman-riwayat">Riwayat analisis lengkap</h1>
-
-                <p class="deskripsi-halaman-riwayat">
-                    Cari, filter, dan tinjau kembali analisis yang tersimpan pada akun Anda.
-                </p>
             </div>
 
             <button
@@ -36,19 +27,16 @@
             <div class="kartu-statistik">
                 <div class="label-statistik">Total analisis</div>
                 <div class="nilai-statistik" id="total-analisis">0</div>
-                <div class="catatan-statistik">Analisis tersimpan</div>
             </div>
 
             <div class="kartu-statistik">
                 <div class="label-statistik">Hasil AI</div>
                 <div class="nilai-statistik" id="analisis-ai">0</div>
-                <div class="catatan-statistik">AI-Generated dan AI-Edited</div>
             </div>
 
             <div class="kartu-statistik">
                 <div class="label-statistik">Rata-rata probabilitas AI</div>
                 <div class="nilai-statistik" id="rata-rata-skor">0%</div>
-                <div class="catatan-statistik">Dari seluruh analisis selesai</div>
             </div>
         </div>
 
@@ -189,6 +177,22 @@
             <div class="baris-info-detail">
                 <span>ID analisis</span>
                 <strong id="id-detail-riwayat">-</strong>
+            </div>
+            <div class="baris-info-detail">
+                <span>Basis deteksi</span>
+                <strong id="basis-detail-riwayat">-</strong>
+            </div>
+            <div class="baris-info-detail">
+                <span>Operating point dan ambang AI</span>
+                <strong id="ambang-detail-riwayat">-</strong>
+            </div>
+            <div class="baris-info-detail">
+                <span>Metadata</span>
+                <strong id="metadata-detail-riwayat">-</strong>
+            </div>
+            <div class="baris-info-detail">
+                <span>Skor per model</span>
+                <strong id="model-detail-riwayat">-</strong>
             </div>
         </div>
 

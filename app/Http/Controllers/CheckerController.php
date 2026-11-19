@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\AnalysisQuotaExceededException;
 use App\Exceptions\ImageClassificationException;
+use App\Jobs\ClassifyImageAnalysis;
 use App\Models\ImageAnalysis;
-use App\Services\LocalAiDetector;
+use App\Models\User;
+use App\Services\AnalysisQuotaService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,12 +26,14 @@ class CheckerController extends Controller
     private const STORAGE_DISK = 'image-analyses';
 
     // Menampilkan halaman deteksi.
-    public function index(): View
+    public function index(Request $request, AnalysisQuotaService $quota): View
     {
-        return view('deteksi.index');
+        return view('deteksi.index', [
+            'quota' => $request->user() ? $quota->snapshot($request->user()) : null,
+        ]);
     }
 
-    public function store(Request $request, LocalAiDetector $classifier): JsonResponse
+    public function store(Request $request, AnalysisQuotaService $quota): JsonResponse
     {
         $validated = $request->validate([
             'image' => [
@@ -61,7 +66,8 @@ class CheckerController extends Controller
             $originalName = basename(str_replace('\\', '/', $file->getClientOriginalName()));
             $originalName = preg_replace('/[\x00-\x1F\x7F]/', '', $originalName) ?: 'image';
 
-            $analysis = DB::transaction(function () use ($file, $originalName, $storedPath, $user): ImageAnalysis {
+            [$analysis, $quotaSnapshot] = DB::transaction(function () use ($file, $originalName, $storedPath, $user, $quota): array {
+                $lockedUser = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
                 $analysis = new ImageAnalysis([
                     'original_filename' => Str::limit($originalName, 255, ''),
                     'image_path' => $storedPath,
@@ -70,10 +76,32 @@ class CheckerController extends Controller
                 ]);
                 $analysis->status = 'pending';
 
-                $user->imageAnalyses()->save($analysis);
+                $lockedUser->imageAnalyses()->save($analysis);
+                $quotaSnapshot = $quota->reserve($lockedUser, $analysis);
 
-                return $analysis;
+                return [$analysis, $quotaSnapshot];
             });
+        } catch (AnalysisQuotaExceededException $exception) {
+            if (is_string($storedPath) && $storedPath !== '') {
+                try {
+                    Storage::disk(self::STORAGE_DISK)->delete($storedPath);
+                } catch (Throwable $cleanupException) {
+                    Log::error('Unable to clean up an upload rejected by the analysis quota.', [
+                        ...ImageClassificationException::contextFor(
+                            $cleanupException,
+                            'controller',
+                            'cleanup_failure',
+                            500,
+                            null,
+                        ),
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'quota' => $exception->quota,
+            ], 429);
         } catch (Throwable $exception) {
             if (is_string($storedPath) && $storedPath !== '') {
                 try {
@@ -101,70 +129,47 @@ class CheckerController extends Controller
         }
 
         try {
-            $analysis->status = 'processing';
-            $analysis->save();
-
-            $prediction = $classifier->classify($analysis);
-
-            $analysis->result_label = $prediction['label'];
-            $analysis->confidence_score = $prediction['score'];
-            $analysis->model_name = $prediction['model'];
-            $analysis->status = 'completed';
-            $analysis->save();
-        } catch (ImageClassificationException $exception) {
-            $persistedFailure = $this->markAnalysisFailed($analysis);
-
-            Log::warning('Local AI image classification failed.', [
-                ...$exception->diagnosticContext(),
-            ]);
-
-            return response()->json([
-                'id' => $analysis->getKey(),
-                'status' => $persistedFailure ? 'failed' : null,
-                'message' => $exception->getMessage(),
-            ], $exception->httpStatus);
+            ClassifyImageAnalysis::dispatch($analysis->getKey())
+                ->onQueue($quotaSnapshot['premium'] ? 'premium' : 'default');
         } catch (Throwable $exception) {
-            $this->markAnalysisFailed($analysis);
+            DB::transaction(function () use ($analysis, $quota): void {
+                $quota->releaseReservation($analysis);
+                $analysis->delete();
+            });
 
-            Log::error('Unable to complete image classification.', [
-                ...ImageClassificationException::contextFor($exception, 'controller', 'internal_error', 500, null),
+            try {
+                Storage::disk(self::STORAGE_DISK)->delete($storedPath);
+            } catch (Throwable $cleanupException) {
+                Log::error('Unable to clean up an analysis that could not be queued.', [
+                    ...ImageClassificationException::contextFor(
+                        $cleanupException,
+                        'controller',
+                        'cleanup_failure',
+                        500,
+                        null,
+                    ),
+                ]);
+            }
+
+            Log::error('Unable to enqueue image analysis.', [
+                ...ImageClassificationException::contextFor($exception, 'controller', 'queue_failure', 500, null),
             ]);
 
             return response()->json([
-                'id' => $analysis->getKey(),
-                'message' => 'Analisis belum dapat diselesaikan. Silakan coba kembali.',
-            ], 500);
+                'message' => 'Analisis belum dapat dimulai. Silakan coba kembali.',
+            ], 503);
         }
 
         return response()->json([
             'id' => $analysis->getKey(),
             'status' => $analysis->status,
-            'result_label' => $analysis->result_label,
-            'confidence_score' => (float) $analysis->confidence_score,
-            'model_name' => $analysis->model_name,
-            'message' => 'Analisis gambar selesai. Hasil merupakan prediksi model, bukan kepastian.',
-        ], 201);
+            'status_url' => route('checker.analyses.show', $analysis->getKey()),
+            'quota' => $quotaSnapshot,
+            'message' => 'Gambar diterima dan masuk antrean analisis.',
+        ], 202);
     }
 
-    private function markAnalysisFailed(ImageAnalysis $analysis): bool
-    {
-        $analysis->result_label = null;
-        $analysis->confidence_score = null;
-        $analysis->model_name = null;
-        $analysis->status = 'failed';
-
-        try {
-            return $analysis->save();
-        } catch (Throwable $exception) {
-            Log::error('Unable to persist failed image analysis status.', [
-                ...ImageClassificationException::contextFor($exception, 'controller', 'status_persistence_failure', 500, null),
-            ]);
-
-            return false;
-        }
-    }
-
-    public function show(Request $request, int $analysisId): JsonResponse
+    public function show(Request $request, int $analysisId, AnalysisQuotaService $quota): JsonResponse
     {
         $analysis = $request->user()->imageAnalyses()->findOrFail($analysisId);
 
@@ -179,7 +184,9 @@ class CheckerController extends Controller
             'confidence_score' => $analysis->confidence_score === null
                 ? null
                 : (float) $analysis->confidence_score,
+            'prediction_details' => $analysis->prediction_details,
             'created_at' => $analysis->created_at,
+            'quota' => $quota->snapshot($request->user()),
         ]);
     }
 

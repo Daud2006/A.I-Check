@@ -44,6 +44,7 @@ class DatabaseSchemaTest extends TestCase
             'status',
             'result_label',
             'confidence_score',
+            'prediction_details',
         ]));
         $this->assertTrue(Schema::hasColumns('plans', [
             'name',

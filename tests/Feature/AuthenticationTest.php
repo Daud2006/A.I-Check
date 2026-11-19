@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
@@ -176,6 +177,32 @@ class AuthenticationTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_uses_a_separate_layout_and_existing_navigation_routes(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+        $adminPage = $this->actingAs($admin)->get(route('admin'));
+        $adminPage->assertOk()
+            ->assertSee('admin-shell', false)
+            ->assertSee('Admin Dashboard')
+            ->assertSee('Back to Website')
+            ->assertSee('Coming Soon')
+            ->assertSee('action="'.route('logout').'"', false)
+            ->assertSee('href="'.route('home').'"', false)
+            ->assertDontSee('href="/admin/users"', false);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('kerangka-situs', false)
+            ->assertSee('menu-navigasi', false)
+            ->assertDontSee('admin-shell', false);
+
+        $this->post(route('logout'))
+            ->assertRedirect(route('home'));
+
+        $this->assertGuest();
+    }
+
     public function test_profile_displays_email_as_read_only_and_updates_only_the_authenticated_users_name(): void
     {
         $user = User::factory()->create([
@@ -265,12 +292,49 @@ class AuthenticationTest extends TestCase
         ]);
         $subscription->status = 'active';
         $user->subscriptions()->save($subscription);
+        $payment = new Payment([
+            'provider' => 'midtrans',
+            'amount' => $plan->price,
+            'currency' => $plan->currency,
+            'paid_at' => now(),
+        ]);
+        $payment->status = 'paid';
+        $payment->user()->associate($user);
+        $payment->subscription()->associate($subscription);
+        $payment->save();
 
         $this->actingAs($user)
             ->get(route('profile'))
             ->assertOk()
             ->assertSee('Premium')
             ->assertSee('profile-account-badge is-premium', false);
+    }
+
+    public function test_profile_displays_free_for_an_active_subscription_without_a_paid_payment(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::query()->create([
+            'name' => 'Premium',
+            'slug' => 'premium',
+            'price' => 29000,
+            'currency' => 'IDR',
+            'billing_interval' => 'monthly',
+            'is_active' => true,
+        ]);
+        $subscription = new Subscription([
+            'plan_id' => $plan->id,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+        ]);
+        $subscription->status = 'active';
+        $user->subscriptions()->save($subscription);
+
+        $this->actingAs($user)
+            ->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Free')
+            ->assertSee('profile-account-badge is-free', false)
+            ->assertDontSee('profile-account-badge is-premium', false);
     }
 
     public function test_profile_displays_free_for_an_inactive_or_unpaid_subscription(): void

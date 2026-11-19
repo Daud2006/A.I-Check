@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use InvalidArgumentException;
 
 class Subscription extends Model
@@ -39,6 +42,37 @@ class Subscription extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    /**
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * @param  Builder<Subscription>  $query
+     * @return Builder<Subscription>
+     */
+    public function scopeCurrentlyEntitled(Builder $query, CarbonInterface $now): Builder
+    {
+        return $query
+            ->where('status', 'active')
+            ->whereNull('cancelled_at')
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+            })
+            ->where(function (Builder $query) use ($now): void {
+                $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+            })
+            ->whereHas('plan', function (Builder $query): void {
+                $query->where('is_active', true)->where('price', '>', 0);
+            })
+            ->whereHas('payments', function (Builder $query): void {
+                $query->where('status', 'paid');
+            });
     }
 
     public function setStatusAttribute(string $status): void

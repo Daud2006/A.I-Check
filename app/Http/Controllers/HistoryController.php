@@ -28,6 +28,7 @@ class HistoryController extends Controller
                 'score' => $analysis->confidence_score === null
                     ? null
                     : (float) $analysis->confidence_score,
+                'details' => $analysis->prediction_details,
                 'date' => $analysis->created_at?->toIso8601String(),
                 'imageUrl' => $this->imageUrl($analysis),
             ])

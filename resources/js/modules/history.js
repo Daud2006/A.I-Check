@@ -210,6 +210,40 @@ if (daftarRiwayat) {
         document.getElementById('id-detail-riwayat').textContent =
             `#${String(item.id).slice(-6)}`;
 
+        const details = item.details && typeof item.details === 'object'
+            ? item.details
+            : {};
+        const formatProbabilitas = (value) => (
+            typeof value === 'number' && Number.isFinite(value)
+                ? `${(value * 100).toFixed(2)}%`
+                : null
+        );
+        const modelScores = details.per_model && typeof details.per_model === 'object'
+            ? Object.entries(details.per_model)
+                .filter(([, score]) => formatProbabilitas(score) !== null)
+                .map(([model, score]) => `${model}: ${formatProbabilitas(score)}`)
+                .join(' · ')
+            : '';
+
+        document.getElementById('basis-detail-riwayat').textContent =
+            details.basis || 'Rincian tidak tersedia untuk analisis lama.';
+
+        const threshold = formatProbabilitas(details.threshold);
+        document.getElementById('ambang-detail-riwayat').textContent =
+            threshold
+                ? `${details.operating_point || 'Tidak tersedia'} · ${threshold}`
+                : 'Tidak tersedia';
+
+        document.getElementById('metadata-detail-riwayat').textContent =
+            details.metadata_says_ai === true
+                ? `Penanda AI terdeteksi${details.metadata_generator ? ` (${details.metadata_generator})` : ''}.`
+                : details.basis
+                    ? 'Tidak ditemukan penanda provenance AI yang dikenali.'
+                    : 'Tidak tersedia untuk analisis lama.';
+
+        document.getElementById('model-detail-riwayat').textContent =
+            modelScores || 'Tidak tersedia untuk analisis lama.';
+
         const gambar = document.getElementById('gambar-detail-riwayat');
         const pesanGambar = document.getElementById('pesan-gambar-detail-riwayat');
 

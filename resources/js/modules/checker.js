@@ -21,12 +21,14 @@ const areaSiapAnalisis = document.getElementById('area-siap-analisis');
 const hasilAnalisis = document.getElementById('hasil-analisis');
 const pesanChecker = document.getElementById('pesan-checker');
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+const ringkasanKuota = document.getElementById('ringkasan-kuota');
 
 const ukuranMaksimal = 10 * 1024 * 1024;
 const mimeDidukung = ['image/jpeg', 'image/png', 'image/webp'];
 let fileTerpilih = null;
 let urlPratinjau = '';
 let unggahanBerlangsung = false;
+let menungguAnalisis = false;
 
 const elemenMarker = areaPratinjau
     ? [...areaPratinjau.querySelectorAll('.titik-marker')]
@@ -151,9 +153,32 @@ const tampilkanPrediksi = (payload) => {
         'A. Hasil model',
         `${payload.result_label} — Probabilitas AI ${nilaiSkor.textContent}.`,
     );
+    const details = payload.prediction_details && typeof payload.prediction_details === 'object'
+        ? payload.prediction_details
+        : {};
+    const modelScores = details.per_model && typeof details.per_model === 'object'
+        ? Object.entries(details.per_model)
+            .filter(([, score]) => typeof score === 'number' && Number.isFinite(score))
+            .map(([model, score]) => `${model}: ${(score * 100).toFixed(2)}%`)
+            .join(' · ')
+        : '';
+    const metadataEvidence = details.metadata_says_ai === true
+        ? `Metadata memuat penanda AI${details.metadata_generator ? ` (${details.metadata_generator})` : ''}.`
+        : 'Tidak ditemukan penanda provenance AI yang dikenali pada metadata gambar.';
+    const basisEvidence = typeof details.basis === 'string' && details.basis !== ''
+        ? `Basis: ${details.basis}.`
+        : 'Rincian basis deteksi tidak tersedia.';
+    const thresholdEvidence = typeof details.threshold === 'number'
+        ? `Operating point ${details.operating_point || 'tidak tersedia'}; ambang AI ${(details.threshold * 100).toFixed(2)}%.`
+        : '';
     const bagianBukti = buatBagianKeterangan(
         'B. Bukti pendukung',
-        'Sistem saat ini tidak memeriksa metadata EXIF maupun Content Credentials (C2PA). Bukti metadata atau provenance belum diperiksa; ini tidak berarti informasi tersebut tidak ada pada gambar.',
+        [
+            basisEvidence,
+            thresholdEvidence,
+            modelScores ? `Skor per model: ${modelScores}.` : '',
+            metadataEvidence,
+        ].filter(Boolean).join(' '),
     );
     const bagianInterpretasi = buatBagianKeterangan(
         'C. Interpretasi',
@@ -161,7 +186,7 @@ const tampilkanPrediksi = (payload) => {
     );
     const bagianKeterbatasan = buatBagianKeterangan(
         'D. Keterbatasan',
-        'Probabilitas AI adalah estimasi model, bukan tingkat kepastian atau akurasi hasil. Model dapat keliru; tanpa pemeriksaan metadata dan provenance, keduanya tidak dapat digunakan untuk menguatkan atau menyangkal prediksi ini.',
+        'Probabilitas AI adalah estimasi model, bukan tingkat kepastian atau akurasi hasil. Model dapat keliru, dan metadata/provenance hanya merupakan petunjuk tambahan; hasil ini bukan bukti asal-usul gambar.',
     );
 
     hasilAnalisis?.replaceChildren(
@@ -179,6 +204,80 @@ const tampilkanPrediksi = (payload) => {
     if (tombolUnggahBaru) tombolUnggahBaru.hidden = false;
 
     return true;
+};
+
+const perbaruiKuota = (quota) => {
+    if (!ringkasanKuota || !quota || typeof quota.used !== 'number') return;
+
+    ringkasanKuota.dataset.used = String(quota.used);
+    if (quota.limit === null) {
+        ringkasanKuota.textContent = 'Kuota analisis: tanpa batas';
+        return;
+    }
+
+    const resetText = quota.resets_at
+        ? `Penggunaan terlama berikutnya direset ${new Date(quota.resets_at).toLocaleString('id-ID')}.`
+        : '';
+    ringkasanKuota.replaceChildren(
+        document.createTextNode(`Kuota 7 hari berjalan: ${quota.used} dari ${quota.limit} analisis`),
+        document.createElement('br'),
+        document.createTextNode(resetText),
+    );
+};
+
+const pollingAnalisis = async (analysisId) => {
+    const statusUrl = inputGambar?.dataset.statusUrl?.replace(
+        '__ANALYSIS_ID__',
+        encodeURIComponent(String(analysisId)),
+    );
+
+    if (!statusUrl) {
+        throw new Error('URL status analisis tidak tersedia.');
+    }
+
+    while (true) {
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+        const response = await fetch(statusUrl, {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+        });
+        const payload = await response.json();
+
+        perbaruiKuota(payload.quota);
+
+        if (!response.ok) {
+            throw new Error(payload.message || 'Status analisis tidak dapat diperiksa.');
+        }
+
+        if (payload.status === 'completed') {
+            aturProgres(100);
+            const predictionIsValid = tampilkanPrediksi(payload);
+            if (kemajuanAnalisis) kemajuanAnalisis.hidden = true;
+            unggahanBerlangsung = false;
+            menungguAnalisis = false;
+            if (kemajuanAnalisis) kemajuanAnalisis.setAttribute('aria-busy', 'false');
+            aturStatusTombol(predictionIsValid);
+            return;
+        }
+
+        if (payload.status === 'failed') {
+            unggahanBerlangsung = false;
+            menungguAnalisis = false;
+            if (kemajuanAnalisis) {
+                kemajuanAnalisis.hidden = true;
+                kemajuanAnalisis.setAttribute('aria-busy', 'false');
+            }
+            aturStatusTombol();
+            tampilkanPesan('Analisis gagal diproses. Silakan coba kembali.', { error: true });
+            return;
+        }
+
+        if (payload.status !== 'pending' && payload.status !== 'processing') {
+            throw new Error('Status analisis tidak dikenali.');
+        }
+
+        if (statusKemajuan) statusKemajuan.textContent = 'Gambar sedang dianalisis. Tetap buka halaman ini atau lihat Riwayat Analisis.';
+    }
 };
 
 const aturProgres = (nilai) => {
@@ -318,9 +417,30 @@ const unggahGambar = () => {
             return;
         }
 
+        if (request.status === 202 && payload.status === 'pending' && payload.id) {
+            menungguAnalisis = true;
+            aturProgres(99);
+            perbaruiKuota(payload.quota);
+            if (statusKemajuan) statusKemajuan.textContent = payload.message || 'Gambar diterima. Menunggu analisis AI...';
+            pollingAnalisis(payload.id).catch(() => {
+                unggahanBerlangsung = false;
+                menungguAnalisis = false;
+                if (kemajuanAnalisis) {
+                    kemajuanAnalisis.hidden = true;
+                    kemajuanAnalisis.setAttribute('aria-busy', 'false');
+                }
+                aturStatusTombol();
+                tampilkanPesan('Status belum dapat diperiksa. Anda dapat membuka Riwayat Analisis untuk melihat pembaruan.', { error: true });
+            });
+            return;
+        }
+
         const validationMessage = payload.errors?.image?.[0];
         if (request.status === 422) {
             tampilkanPesan(validationMessage || payload.message || 'File gambar tidak valid.', { error: true });
+        } else if (request.status === 429) {
+            perbaruiKuota(payload.quota);
+            tampilkanPesan(payload.message || 'Kuota analisis 7 hari Anda telah habis.', { error: true });
         } else if (request.status === 401) {
             tampilkanPesan('Silakan masuk sebelum mengunggah gambar.', { error: true, tautanLogin: true });
         } else {
@@ -337,6 +457,7 @@ const unggahGambar = () => {
     });
 
     request.addEventListener('loadend', () => {
+        if (menungguAnalisis) return;
         unggahanBerlangsung = false;
         if (kemajuanAnalisis) kemajuanAnalisis.setAttribute('aria-busy', 'false');
         if (request.status !== 201) aturStatusTombol();

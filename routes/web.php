@@ -2,11 +2,16 @@
 
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminPlanController;
+use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckerController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\ProfileController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 // Rute halaman umum.
@@ -30,8 +35,20 @@ Route::middleware('auth')->prefix('checker/analyses')->name('checker.analyses.')
     Route::get('/{analysisId}/image', [CheckerController::class, 'image'])->whereNumber('analysisId')->name('image');
 });
 Route::get('/about', [AboutController::class, 'index'])->name('about');
+Route::get('/plans', [BillingController::class, 'plans'])->name('plans.index');
+Route::post('/webhooks/midtrans', MidtransWebhookController::class)
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('webhooks.midtrans');
 
 Route::middleware('auth')->group(function () {
+    Route::post('/checkout/{plan}', [BillingController::class, 'checkout'])
+        ->whereNumber('plan')
+        ->name('checkout.store');
+    Route::get('/transactions', [BillingController::class, 'transactions'])->name('transactions.index');
+    Route::get('/transactions/{paymentId}', [BillingController::class, 'showTransaction'])
+        ->whereNumber('paymentId')
+        ->name('transactions.show');
+
     Route::get('/history', [HistoryController::class, 'index'])->name('history');
     Route::delete('/history', [HistoryController::class, 'destroyAll'])->name('history.destroy-all');
     Route::delete('/history/{analysisId}', [HistoryController::class, 'destroy'])
@@ -44,3 +61,30 @@ Route::middleware('auth')->group(function () {
 Route::get('/admin', [AdminController::class, 'index'])
     ->middleware('auth')
     ->name('admin');
+Route::middleware('auth')->prefix('admin/users')->name('admin.users.')->group(function () {
+    Route::get('/', [AdminController::class, 'users'])->name('index');
+    Route::get('/{userId}', [AdminController::class, 'showUser'])->whereNumber('userId')->name('show');
+});
+Route::middleware('auth')->prefix('admin/analyses')->name('admin.analyses.')->group(function () {
+    Route::get('/', [AdminController::class, 'analyses'])->name('index');
+    Route::get('/{analysisId}', [AdminController::class, 'showAnalysis'])->whereNumber('analysisId')->name('show');
+});
+Route::middleware('auth')->prefix('admin/transactions')->name('admin.transactions.')->group(function () {
+    Route::get('/', [AdminController::class, 'transactions'])->name('index');
+    Route::get('/{paymentId}', [AdminController::class, 'showTransaction'])->whereNumber('paymentId')->name('show');
+});
+Route::middleware('auth')->prefix('admin/plans')->name('admin.plans.')->group(function () {
+    Route::get('/', [AdminPlanController::class, 'index'])->name('index');
+    Route::get('/create', [AdminPlanController::class, 'create'])->name('create');
+    Route::post('/', [AdminPlanController::class, 'store'])->name('store');
+    Route::get('/{plan}', [AdminPlanController::class, 'show'])->whereNumber('plan')->name('show');
+    Route::get('/{plan}/edit', [AdminPlanController::class, 'edit'])->whereNumber('plan')->name('edit');
+    Route::put('/{plan}', [AdminPlanController::class, 'update'])->whereNumber('plan')->name('update');
+    Route::patch('/{plan}/active', [AdminPlanController::class, 'setActive'])->whereNumber('plan')->name('active');
+});
+Route::middleware('auth')->prefix('admin/reports')->name('admin.reports.')->group(function () {
+    Route::get('/', [AdminReportController::class, 'index'])->name('index');
+    Route::get('/export/{type}', [AdminReportController::class, 'export'])
+        ->whereIn('type', ['users', 'analyses', 'transactions'])
+        ->name('export');
+});
