@@ -186,7 +186,7 @@ class AuthenticationTest extends TestCase
             ->assertSee('admin-shell', false)
             ->assertSee('Admin Dashboard')
             ->assertSee('Back to Website')
-            ->assertSee('Coming Soon')
+            ->assertSee(route('admin.subscriptions.index'))
             ->assertSee('action="'.route('logout').'"', false)
             ->assertSee('href="'.route('home').'"', false)
             ->assertDontSee('href="/admin/users"', false);

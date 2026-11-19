@@ -38,8 +38,13 @@ class ClassifyImageAnalysis implements ShouldQueue
             return;
         }
 
-        $analysis->status = 'processing';
-        $analysis->save();
+        $claimed = ImageAnalysis::query()->whereKey($this->analysisId)
+            ->where('status', 'pending')
+            ->update(['status' => 'processing']);
+
+        if ($claimed === 0) {
+            return;
+        }
 
         try {
             $prediction = $classifier->classify($analysis);

@@ -9,7 +9,7 @@
     <div class="container">
         <div class="kepala-halaman-riwayat">
             <div>
-                <h1 class="judul-halaman-riwayat">Riwayat analisis lengkap</h1>
+                <h1 class="judul-halaman-riwayat">Riwayat</h1>
             </div>
 
             <button
@@ -43,15 +43,9 @@
         {{-- Pencarian, filter, dan pengurutan --}}
         <div class="filter-riwayat no-print">
             <div class="pencarian-riwayat">
-                <button
-                    type="button"
-                    class="tombol-pencarian-riwayat"
-                    id="tombol-pencarian-riwayat"
-                    aria-label="Fokus ke kolom pencarian riwayat"
-                    aria-controls="pencarian-riwayat"
-                >
+                <span class="ikon-pencarian-riwayat" aria-hidden="true">
                     @include('icon', ['name' => 'search'])
-                </button>
+                </span>
 
                 <input
                     type="search"
@@ -100,6 +94,11 @@
                 <p>Memuat riwayat analisis...</p>
             </div>
         </div>
+        <nav class="billing-pagination no-print" id="paginasi-riwayat" aria-label="Halaman riwayat" hidden>
+            <button class="btn btn-secondary" type="button" id="riwayat-sebelumnya">Sebelumnya</button>
+            <span id="nomor-halaman-riwayat" aria-live="polite"></span>
+            <button class="btn btn-secondary" type="button" id="riwayat-berikutnya">Berikutnya</button>
+        </nav>
     </div>
 </section>
 

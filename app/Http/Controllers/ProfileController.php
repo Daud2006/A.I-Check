@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AnalysisQuotaService;
+use Illuminate\Support\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -9,17 +11,16 @@ use Illuminate\Http\Request;
 class ProfileController extends Controller
 {
     // Menampilkan halaman profil.
-    public function index(Request $request): View
+    public function index(Request $request, AnalysisQuotaService $quota): View
     {
-        $user = $request->user();
-        $now = now();
-
-        $hasPremiumAccess = $user->subscriptions()
-            ->currentlyEntitled($now)
-            ->exists();
+        $account = $quota->accountSummary($request->user());
+        $nextQuotaAt = $account['quota']['resets_at'];
 
         return view('beranda.profil', [
-            'accountType' => $hasPremiumAccess ? 'Premium' : 'Free',
+            'account' => $account,
+            'nextQuotaAt' => $nextQuotaAt
+                ? Carbon::parse($nextQuotaAt)->utc()->locale('id')
+                : null,
         ]);
     }
 

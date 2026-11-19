@@ -3,12 +3,12 @@
 @section('title', 'A.I Check | Laporan')
 
 @section('content')
-    <section class="admin-page" aria-labelledby="admin-reports-title">
+    <section class="admin-page admin-page-wide" aria-labelledby="admin-reports-title">
         <div class="admin-page-heading">
             <div>
-                <span class="eyebrow">Administrasi</span>
+
                 <h1 class="admin-title" id="admin-reports-title">Laporan</h1>
-                <p class="admin-description">Ringkasan dihitung langsung dari data database dan mengikuti filter yang dipilih.</p>
+
             </div>
         </div>
 
@@ -29,15 +29,6 @@
                     <input type="date" name="date_to" value="{{ $filters['date_to'] }}" class="admin-filter-control">
                 </label>
                 <label class="admin-filter-field">
-                    <span class="admin-filter-label">Role pengguna</span>
-                    <select name="user_role" class="admin-filter-control">
-                        <option value="">Semua role</option>
-                        @foreach (\App\Models\User::ROLES as $role)
-                            <option value="{{ $role }}" @selected($filters['user_role'] === $role)>{{ ucfirst($role) }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="admin-filter-field">
                     <span class="admin-filter-label">Status analisis</span>
                     <select name="analysis_status" class="admin-filter-control">
                         <option value="">Semua status</option>
@@ -56,7 +47,7 @@
                     </select>
                 </label>
                 <label class="admin-filter-field">
-                    <span class="admin-filter-label">Status pembayaran untuk export</span>
+                    <span class="admin-filter-label">Status pembayaran (CSV)</span>
                     <select name="payment_status" class="admin-filter-control">
                         <option value="">Semua status</option>
                         @foreach (\App\Models\Payment::STATUSES as $status)
@@ -74,16 +65,20 @@
                     </select>
                 </label>
                 <div class="admin-filter-actions">
-                    <button type="submit" class="btn btn-primary">Terapkan filter</button>
-                    <a href="{{ route('admin.reports.index') }}" class="btn btn-secondary">Reset</a>
+                    <button type="submit" class="btn btn-primary">@include('icon', ['name' => 'search', 'class' => 'icon-sm'])Terapkan</button>
+                    <a href="{{ route('admin.reports.index') }}" class="btn btn-admin-reset">Reset</a>
                 </div>
             </form>
+            <div class="admin-filter-actions admin-report-export-actions">
+                <a href="{{ route('admin.reports.export', ['type' => 'users'] + array_intersect_key($filters, array_flip(['date_from', 'date_to', 'plan_id']))) }}" class="btn btn-secondary">Ekspor CSV pengguna</a>
+                <a href="{{ route('admin.reports.export', ['type' => 'analyses'] + array_intersect_key($filters, array_flip(['date_from', 'date_to', 'analysis_status', 'result_label']))) }}" class="btn btn-secondary">Ekspor CSV analisis</a>
+                <a href="{{ route('admin.reports.export', ['type' => 'transactions'] + array_intersect_key($filters, array_flip(['date_from', 'date_to', 'payment_status', 'plan_id']))) }}" class="btn btn-secondary">Ekspor CSV transaksi</a>
+            </div>
         </section>
 
         <section class="admin-data-panel admin-report-section" aria-labelledby="admin-report-users-title">
             <div class="admin-section-heading">
-                <div><h2 class="admin-section-title" id="admin-report-users-title">Laporan pengguna</h2><p class="admin-section-description">Total akun mengikuti role dan paket; pengguna baru mengikuti rentang tanggal.</p></div>
-                <a href="{{ route('admin.reports.export', ['type' => 'users'] + array_intersect_key($filters, array_flip(['date_from', 'date_to', 'user_role', 'plan_id']))) }}" class="btn btn-secondary">Export pengguna CSV</a>
+                <div><h2 class="admin-section-title" id="admin-report-users-title">Laporan pengguna</h2></div>
             </div>
             <div class="admin-report-metrics">
                 <article class="admin-report-metric"><span>Total akun</span><strong>{{ number_format($userCount) }}</strong></article>
@@ -91,14 +86,6 @@
                 <article class="admin-report-metric"><span>Online 5 menit terakhir</span><strong>{{ $onlineUsersAvailable ? number_format($onlineUsersCount) : 'Tidak tersedia' }}</strong></article>
             </div>
             <div class="admin-report-columns">
-                <div>
-                    <h3 class="admin-report-subtitle">Akun baru berdasarkan role</h3>
-                    @forelse ($usersByRole as $row)
-                        <p>{{ ucfirst($row->role) }} <strong>{{ number_format($row->total) }}</strong></p>
-                    @empty
-                        <p>Belum ada pengguna pada filter ini.</p>
-                    @endforelse
-                </div>
                 <div>
                     <h3 class="admin-report-subtitle">Pengguna Premium aktif per paket</h3>
                     @forelse ($usersByPlan as $row)
@@ -112,8 +99,7 @@
 
         <section class="admin-data-panel admin-report-section" aria-labelledby="admin-report-analyses-title">
             <div class="admin-section-heading">
-                <div><h2 class="admin-section-title" id="admin-report-analyses-title">Laporan analisis</h2><p class="admin-section-description">Label AI mencakup AI-GENERATED dan AI-EDITED; REAL dihitung terpisah. UNCERTAIN/tanpa label tidak dipaksa menjadi kelas.</p></div>
-                <a href="{{ route('admin.reports.export', ['type' => 'analyses'] + array_intersect_key($filters, array_flip(['date_from', 'date_to', 'analysis_status', 'result_label']))) }}" class="btn btn-secondary">Export analisis CSV</a>
+                <div><h2 class="admin-section-title" id="admin-report-analyses-title">Laporan analisis</h2></div>
             </div>
             <div class="admin-report-metrics">
                 <article class="admin-report-metric"><span>Total analisis terfilter</span><strong>{{ number_format($analysisCount) }}</strong></article>
@@ -152,8 +138,7 @@
 
         <section class="admin-data-panel admin-report-section" aria-labelledby="admin-report-payments-title">
             <div class="admin-section-heading">
-                <div><h2 class="admin-section-title" id="admin-report-payments-title">Laporan transaksi dan pendapatan</h2><p class="admin-section-description">Pendapatan hanya menjumlahkan transaksi paid dan dipisahkan menurut mata uang.</p></div>
-                <a href="{{ route('admin.reports.export', ['type' => 'transactions'] + array_intersect_key($filters, array_flip(['date_from', 'date_to', 'payment_status', 'plan_id']))) }}" class="btn btn-secondary">Export transaksi CSV</a>
+                <div><h2 class="admin-section-title" id="admin-report-payments-title">Laporan transaksi dan pendapatan</h2></div>
             </div>
             <div class="admin-report-columns">
                 <div>
@@ -165,7 +150,7 @@
                     @endforelse
                 </div>
                 <div>
-                    <h3 class="admin-report-subtitle">Pendapatan paid per mata uang</h3>
+                    <h3 class="admin-report-subtitle">Pendapatan per mata uang</h3>
                     @forelse ($paidRevenueByCurrency as $row)
                         <p>{{ $row->currency }} <strong>{{ number_format((float) $row->total_amount, 2, ',', '.') }}</strong></p>
                     @empty
@@ -177,7 +162,7 @@
                 <h3 class="admin-report-subtitle">Transaksi berdasarkan paket dan mata uang</h3>
                 @if ($transactionsByPlan->isNotEmpty())
                     <table class="admin-table">
-                        <thead><tr><th>Paket</th><th>Mata uang</th><th>Transaksi</th><th>Pendapatan paid</th></tr></thead>
+                        <thead><tr><th>Paket</th><th>Mata uang</th><th>Transaksi</th><th>Pendapatan</th></tr></thead>
                         <tbody>
                             @foreach ($transactionsByPlan as $row)
                                 <tr>

@@ -154,8 +154,7 @@
 .auth-inline-notice[hidden] {
     display: none;
 }
-.modal-otorisasi,
-.modal-subscribe {
+.modal-otorisasi {
     overflow-y: auto;
 }
 .panel-otorisasi {

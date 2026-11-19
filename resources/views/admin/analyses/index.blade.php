@@ -3,16 +3,12 @@
 @section('title', 'A.I Check | Manajemen Analisis')
 
 @section('content')
-    <section class="admin-page" aria-labelledby="admin-analyses-title">
+    <section class="admin-page admin-page-wide" aria-labelledby="admin-analyses-title">
         <div class="admin-page-heading admin-users-heading">
             <div>
-                <span class="eyebrow">@include('icon', ['name' => 'image', 'class' => 'icon-sm'])Administrasi</span>
+
                 <h1 class="admin-title" id="admin-analyses-title">Manajemen Analisis</h1>
-                <p class="admin-description">Cari dan tinjau hasil pemeriksaan gambar yang tersimpan.</p>
-            </div>
-            <div class="admin-users-total">
-                <strong>{{ number_format($analyses->total()) }}</strong>
-                <span>analisis ditemukan</span>
+
             </div>
         </div>
 
@@ -25,6 +21,10 @@
                     @endforeach
                 </ul>
             </div>
+        @endif
+
+        @if (session('status'))
+            <p class="admin-status-note" role="status">{{ session('status') }}</p>
         @endif
 
         <section class="admin-data-panel admin-users-filter-panel" aria-label="Pencarian dan filter analisis">
@@ -95,7 +95,7 @@
                         Terapkan
                     </button>
                     @if (collect($filters)->contains(fn (string $value): bool => $value !== ''))
-                        <a href="{{ route('admin.analyses.index') }}" class="btn btn-secondary">Reset filter</a>
+                        <a href="{{ route('admin.analyses.index') }}" class="btn btn-admin-reset">Reset filter</a>
                     @endif
                 </div>
             </form>
@@ -110,10 +110,9 @@
                                 <th scope="col">ID</th>
                                 <th scope="col">Pengguna</th>
                                 <th scope="col">Waktu</th>
-                                <th scope="col">Tipe file</th>
                                 <th scope="col">Status</th>
                                 <th scope="col">Hasil / nilai tersimpan</th>
-                                <th scope="col"><span class="admin-visually-hidden">Aksi</span></th>
+                                <th scope="col" class="admin-sticky-actions"><span class="admin-visually-hidden">Aksi</span></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -136,7 +135,6 @@
                                         @endif
                                     </td>
                                     <td>{{ $analysis->created_at?->format('d/m/Y H:i') ?? '—' }}</td>
-                                    <td>{{ $analysis->mime_type }}</td>
                                     <td>
                                         <span class="admin-badge {{ $analysis->status === 'completed' ? 'is-premium' : '' }}">
                                             {{ match ($analysis->status) {
@@ -160,15 +158,26 @@
                                             <span class="admin-table-secondary">confidence_score: {{ number_format($score, 6, '.', '') }}</span>
                                         @endif
                                     </td>
-                                    <td>
-                                        <a
-                                            href="{{ route('admin.analyses.show', $analysis->id) }}"
-                                            class="admin-user-detail-link"
-                                            aria-label="Lihat detail analisis {{ $analysis->id }}"
-                                        >
-                                            Lihat detail
-                                            @include('icon', ['name' => 'arrow', 'class' => 'icon-sm'])
-                                        </a>
+                                    <td class="admin-sticky-actions">
+                                        <div class="admin-row-actions">
+                                            @if (in_array($analysis->status, ['completed', 'failed'], true))
+                                                <form method="POST" action="{{ route('admin.analyses.destroy', $analysis->id) }}" data-confirm-admin-action="Hapus analisis #{{ $analysis->id }} dari Riwayat pengguna?">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="admin-row-delete" title="Hapus analisis {{ $analysis->id }}" aria-label="Hapus analisis {{ $analysis->id }}">
+                                                        @include('icon', ['name' => 'trash', 'class' => 'icon-sm'])
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <a
+                                                href="{{ route('admin.analyses.show', $analysis->id) }}"
+                                                class="admin-user-detail-link"
+                                                aria-label="Lihat detail analisis {{ $analysis->id }}"
+                                            >
+                                                Lihat detail
+                                                @include('icon', ['name' => 'arrow', 'class' => 'icon-sm'])
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

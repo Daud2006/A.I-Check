@@ -62,20 +62,19 @@
 
                     <a href="{{ route('admin.users.index') }}" class="admin-nav-link {{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}" @if (request()->routeIs('admin.users.*')) aria-current="page" @endif>
                         @include('icon', ['name' => 'user'])
-                        <span class="admin-nav-label">Users</span>
+                        <span class="admin-nav-label">Pengguna</span>
                     </a>
                     <a href="{{ route('admin.analyses.index') }}" class="admin-nav-link {{ request()->routeIs('admin.analyses.*') ? 'is-active' : '' }}" @if (request()->routeIs('admin.analyses.*')) aria-current="page" @endif>
                         @include('icon', ['name' => 'image'])
-                        <span class="admin-nav-label">AI Analyses</span>
+                        <span class="admin-nav-label">Analisis</span>
                     </a>
-                    <div class="admin-nav-item is-disabled" aria-disabled="true">
+                    <a href="{{ route('admin.subscriptions.index') }}" class="admin-nav-link {{ request()->routeIs('admin.subscriptions.*') ? 'is-active' : '' }}" @if (request()->routeIs('admin.subscriptions.index')) aria-current="page" @endif>
                         @include('icon', ['name' => 'refresh'])
-                        <span class="admin-nav-label">Subscriptions</span>
-                        <span class="admin-coming-soon">Coming Soon</span>
-                    </div>
+                        <span class="admin-nav-label">Langganan</span>
+                    </a>
                     <a href="{{ route('admin.transactions.index') }}" class="admin-nav-link {{ request()->routeIs('admin.transactions.*') ? 'is-active' : '' }}" @if (request()->routeIs('admin.transactions.*')) aria-current="page" @endif>
                         @include('icon', ['name' => 'check'])
-                        <span class="admin-nav-label">Transactions</span>
+                        <span class="admin-nav-label">Transaksi</span>
                     </a>
                     <a href="{{ route('admin.reports.index') }}" class="admin-nav-link {{ request()->routeIs('admin.reports.*') ? 'is-active' : '' }}" @if (request()->routeIs('admin.reports.*')) aria-current="page" @endif>
                         @include('icon', ['name' => 'download'])

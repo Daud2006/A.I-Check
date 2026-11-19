@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\AnalysisQuotaExceededException;
 use App\Models\ImageAnalysis;
-use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\UsageRecord;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -20,16 +20,33 @@ class AnalysisQuotaService
     public function snapshot(User $user, ?CarbonImmutable $now = null): array
     {
         $now ??= CarbonImmutable::now();
+
+        return $this->quotaFor($user, $now, $this->entitledSubscription($user, $now));
+    }
+
+    /** @return array{subscription: Subscription|null, quota: array{limit: int|null, used: int, remaining: int|null, resets_at: string|null, premium: bool}} */
+    public function accountSummary(User $user): array
+    {
+        $now = CarbonImmutable::now();
+        $subscription = $this->entitledSubscription($user, $now);
+
+        return [
+            'subscription' => $subscription,
+            'quota' => $this->quotaFor($user, $now, $subscription),
+        ];
+    }
+
+    private function quotaFor(User $user, CarbonImmutable $now, ?Subscription $subscription): array
+    {
         $periodStart = $now->subDays(7);
         $usage = $user->usageRecords()
             ->where('usage_type', 'analysis')
             ->where('created_at', '>', $periodStart);
         $used = (int) (clone $usage)->sum('quantity');
         $oldestUsage = (clone $usage)->orderBy('created_at')->value('created_at');
-        $plan = $this->entitledPlan($user, $now);
         $limit = $user->role === User::ROLE_ADMIN
             ? null
-            : ($plan?->analysis_limit ?? ($plan === null ? self::FREE_WEEKLY_LIMIT : null));
+            : ($subscription ? $subscription->analysisLimit() : self::FREE_WEEKLY_LIMIT);
 
         return [
             'limit' => $limit,
@@ -38,7 +55,7 @@ class AnalysisQuotaService
             'resets_at' => $limit === null || $oldestUsage === null
                 ? null
                 : CarbonImmutable::parse($oldestUsage)->addDays(7)->toIso8601String(),
-            'premium' => $plan !== null,
+            'premium' => $subscription !== null,
         ];
     }
 
@@ -81,15 +98,13 @@ class AnalysisQuotaService
             ->delete();
     }
 
-    public function entitledPlan(User $user, ?CarbonImmutable $now = null): ?Plan
+    private function entitledSubscription(User $user, CarbonImmutable $now): ?Subscription
     {
-        $subscription = $user->subscriptions()
-            ->currentlyEntitled($now ?? CarbonImmutable::now())
+        return $user->subscriptions()
+            ->currentlyEntitled($now)
             ->with('plan')
             ->orderByDesc('starts_at')
             ->orderByDesc('id')
             ->first();
-
-        return $subscription?->plan;
     }
 }

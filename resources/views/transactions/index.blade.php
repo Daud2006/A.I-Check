@@ -9,6 +9,7 @@
                 <span class="eyebrow">Pembayaran</span>
                 <h1>Riwayat transaksi</h1>
                 <p>Status berubah setelah notifikasi Midtrans diverifikasi oleh server.</p>
+                <p><a href="{{ route('plans.index') }}" class="billing-link">Lihat paket langganan</a></p>
             </header>
 
             <section class="billing-panel" aria-label="Daftar transaksi">
@@ -29,7 +30,7 @@
                                 @foreach ($payments as $payment)
                                     <tr>
                                         <td>#{{ $payment->id }}</td>
-                                        <td>{{ $payment->subscription?->plan?->name ?? 'Paket tidak tersedia' }}</td>
+                                        <td>{{ $payment->subscription?->planName() ?? 'Paket tidak tersedia' }}</td>
                                         <td>{{ $payment->currency }} {{ number_format((float) $payment->amount, 2, ',', '.') }}</td>
                                         <td>
                                             <span class="billing-status is-{{ $payment->status }}">

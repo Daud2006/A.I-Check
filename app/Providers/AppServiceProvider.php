@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (getenv('AICHECK_USE_BUILT_ASSETS') === '1') {
+            Vite::useHotFile(storage_path('framework/aicheck-local.hot'));
+        }
     }
 }

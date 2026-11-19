@@ -446,6 +446,28 @@ class ImageCheckerTest extends TestCase
         ClassifyImageAnalysis::dispatchSync($analysisId);
     }
 
+    public function test_recovery_releases_quota_only_for_stale_unfinished_analyses(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        $upload = fn () => $this->postJson(route('checker.analyses.store'), [
+            'image' => UploadedFile::fake()->image('recovery.png'),
+        ])->assertAccepted()->json('id');
+
+        $staleId = $upload();
+        $freshId = $upload();
+        DB::table('image_analyses')->where('id', $staleId)->update([
+            'status' => 'processing',
+            'updated_at' => now()->subMinutes(11),
+        ]);
+
+        $this->artisan('analyses:recover')->assertExitCode(0);
+        $this->assertDatabaseHas('image_analyses', ['id' => $staleId, 'status' => 'failed']);
+        $this->assertDatabaseHas('image_analyses', ['id' => $freshId, 'status' => 'pending']);
+        $this->assertDatabaseMissing('usage_records', ['image_analysis_id' => $staleId]);
+        $this->assertDatabaseHas('usage_records', ['image_analysis_id' => $freshId]);
+    }
+
     private function fakeDetector(): void
     {
         $this->fakeDetectorPayload($this->detectorPayload());

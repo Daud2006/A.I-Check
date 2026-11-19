@@ -7,22 +7,25 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\LocalAiDetector;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use PDOException;
 
 class AdminController extends Controller
 {
     // Menampilkan halaman admin.
-    public function index(): View
+    public function index(LocalAiDetector $detector): View
     {
         abort_unless(auth()->user()->role === User::ROLE_ADMIN, 403);
 
@@ -32,6 +35,9 @@ class AdminController extends Controller
         $dashboardError = null;
         $onlineUsersCount = null;
         $onlineUsersAvailable = config('session.driver') === 'database';
+        $todayOutcomes = collect();
+        $freeUserCount = null;
+        $monthlyRevenue = collect();
 
         try {
             $userCount = User::query()->count();
@@ -44,6 +50,17 @@ class AdminController extends Controller
             $activeSubscriptionUsersCount = $this->activeSubscriptionsQuery($now)
                 ->distinct()
                 ->count('user_id');
+            $freeUserCount = User::query()->where('role', User::ROLE_USER)
+                ->whereDoesntHave('subscriptions', fn (Builder $query) => $query->currentlyEntitled($now))->count();
+            $todayOutcomes = ImageAnalysis::query()->where('created_at', '>=', $today)
+                ->where('created_at', '<', $today->copy()->addDay())
+                ->whereIn('status', ['completed', 'failed'])
+                ->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
+            $monthlyRevenue = Payment::query()->where('status', 'paid')
+                ->where('paid_at', '>=', $today->copy()->startOfMonth())
+                ->where('paid_at', '<', $today->copy()->addMonthNoOverflow()->startOfMonth())
+                ->selectRaw('environment, currency, SUM(amount) as total')
+                ->groupBy('environment', 'currency')->orderBy('environment')->orderBy('currency')->get();
 
             $successfulPaymentCount = Payment::query()
                 ->where('status', 'paid')
@@ -130,6 +147,10 @@ class AdminController extends Controller
 
         return view('admin.index', [
             'dashboardError' => $dashboardError,
+            'detectorReady' => $detector->isReady(),
+            'todayOutcomes' => $todayOutcomes,
+            'freeUserCount' => $freeUserCount,
+            'monthlyRevenue' => $monthlyRevenue,
             'userCount' => $userCount,
             'analysisCount' => $analysisCount,
             'todayAnalysisCount' => $todayAnalysisCount,
@@ -154,15 +175,18 @@ class AdminController extends Controller
             'role' => ['nullable', Rule::in(User::ROLES)],
             'subscription' => ['nullable', Rule::in([...Subscription::STATUSES, 'none'])],
             'plan' => ['nullable', 'integer', Rule::exists('plans', 'id')],
+            'account' => ['nullable', Rule::in(['free', 'premium'])],
         ]);
 
         $search = trim($validated['search'] ?? '');
         $role = $validated['role'] ?? '';
         $subscriptionStatus = $validated['subscription'] ?? '';
         $planId = $validated['plan'] ?? '';
+        $account = $validated['account'] ?? '';
+        $now = now();
 
         $users = User::query()
-            ->select(['id', 'name', 'email', 'role', 'created_at'])
+            ->select(['id', 'name', 'email', 'role', 'created_at', 'disabled_at'])
             ->with(['latestSubscription' => function (HasOne $query): void {
                 $query->select([
                     'subscriptions.id',
@@ -173,6 +197,7 @@ class AdminController extends Controller
                     'subscriptions.ends_at',
                     'subscriptions.cancelled_at',
                     'subscriptions.created_at',
+                    'subscriptions.plan_terms',
                 ])->with('plan:id,name');
             }])
             ->when($search !== '', function (Builder $query) use ($search): void {
@@ -182,6 +207,8 @@ class AdminController extends Controller
                 });
             })
             ->when($role !== '', fn (Builder $query): Builder => $query->where('role', $role))
+            ->when($account === 'premium', fn (Builder $query): Builder => $query->whereHas('subscriptions', fn (Builder $subscriptions) => $subscriptions->currentlyEntitled($now)))
+            ->when($account === 'free', fn (Builder $query): Builder => $query->whereDoesntHave('subscriptions', fn (Builder $subscriptions) => $subscriptions->currentlyEntitled($now)))
             ->when($subscriptionStatus === 'none', fn (Builder $query): Builder => $query->whereDoesntHave('subscriptions'))
             ->when(
                 ($subscriptionStatus !== '' && $subscriptionStatus !== 'none') || $planId !== '',
@@ -212,8 +239,113 @@ class AdminController extends Controller
                 'role' => $role,
                 'subscription' => $subscriptionStatus,
                 'plan' => (string) $planId,
+                'account' => $account,
             ],
         ]);
+    }
+
+    public function createUser(): View
+    {
+        $this->ensureAdmin();
+
+        return view('admin.users.create');
+    }
+
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $this->ensureAdmin();
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:3', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+        ], [
+            'email.unique' => 'Email tersebut sudah terdaftar.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+        ], [
+            'name' => 'nama',
+            'password' => 'kata sandi awal',
+        ]);
+
+        $user = User::query()->create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+        ]);
+        Log::notice('Admin created user account.', ['admin_id' => $request->user()->id, 'user_id' => $user->id]);
+
+        return redirect()->route('admin.users.show', $user->id)->with('status', 'Akun pengguna berhasil dibuat.');
+    }
+
+    public function editUser(int $userId): View
+    {
+        $this->ensureAdmin();
+        $user = User::query()->where('role', User::ROLE_USER)->findOrFail($userId);
+
+        return view('admin.users.create', ['editingUser' => $user]);
+    }
+
+    public function updateUser(Request $request, int $userId): RedirectResponse
+    {
+        $this->ensureAdmin();
+        $user = User::query()->where('role', User::ROLE_USER)->findOrFail($userId);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:3', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+        ]);
+        DB::transaction(function () use ($user, $data): void {
+            if ($user->email !== $data['email']) {
+                DB::table(config('auth.passwords.users.table', 'password_reset_tokens'))->where('email', $user->email)->delete();
+                $user->email_verified_at = null;
+            }
+            $user->fill($data)->save();
+        });
+        Log::notice('Admin updated user account.', ['admin_id' => $request->user()->id, 'user_id' => $userId]);
+
+        return redirect()->route('admin.users.show', $userId)->with('status', 'Akun pengguna diperbarui.');
+    }
+
+    public function destroyUser(Request $request, int $userId): RedirectResponse
+    {
+        $this->ensureAdmin();
+        $disabled = DB::transaction(function () use ($userId): bool {
+            $user = User::query()->where('role', User::ROLE_USER)->lockForUpdate()->findOrFail($userId);
+            $hasHistory = $user->imageAnalyses()->exists() || $user->usageRecords()->exists()
+                || $user->subscriptions()->exists() || $user->payments()->exists();
+
+            if ($hasHistory) {
+                $user->disabled_at ??= now();
+                $user->setRememberToken(null);
+                $user->save();
+            }
+
+            if (config('session.driver') === 'database') {
+                $connection = DB::connection(config('session.connection'));
+                $connection->table(config('session.table', 'sessions'))->where('user_id', $userId)->delete();
+            }
+            DB::table(config('auth.passwords.users.table', 'password_reset_tokens'))->where('email', $user->email)->delete();
+
+            if (! $hasHistory) {
+                $user->delete();
+            }
+
+            return $hasHistory;
+        }, 3);
+        Log::notice($disabled ? 'Admin disabled user account.' : 'Admin deleted user account.', [
+            'admin_id' => $request->user()->id, 'user_id' => $userId,
+        ]);
+
+        return redirect()->route('admin.users.index')->with('status', $disabled ? 'Akun dinonaktifkan. Riwayat tetap tersimpan.' : 'Akun dihapus.');
+    }
+
+    public function enableUser(Request $request, int $userId): RedirectResponse
+    {
+        $this->ensureAdmin();
+        $user = User::query()->where('role', User::ROLE_USER)->findOrFail($userId);
+        $user->disabled_at = null;
+        $user->save();
+        Log::notice('Admin enabled user account.', ['admin_id' => $request->user()->id, 'user_id' => $userId]);
+
+        return redirect()->route('admin.users.show', $userId)->with('status', 'Akun pengguna diaktifkan kembali.');
     }
 
     public function showUser(int $userId): View
@@ -221,7 +353,7 @@ class AdminController extends Controller
         $this->ensureAdmin();
 
         $user = User::query()
-            ->select(['id', 'name', 'email', 'role', 'email_verified_at', 'created_at', 'updated_at'])
+            ->select(['id', 'name', 'email', 'role', 'email_verified_at', 'disabled_at', 'created_at', 'updated_at'])
             ->findOrFail($userId);
 
         $subscriptions = $user->subscriptions()
@@ -238,6 +370,7 @@ class AdminController extends Controller
                 'ends_at',
                 'cancelled_at',
                 'created_at',
+                'plan_terms',
             ]);
 
         $analysisCount = $user->imageAnalyses()->count();

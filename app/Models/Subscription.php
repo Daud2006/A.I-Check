@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\CarbonInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,7 @@ class Subscription extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'plan_terms' => 'array',
         ];
     }
 
@@ -52,6 +54,42 @@ class Subscription extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function scopeEligible(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 'active')
+            ->whereNull('cancelled_at')
+            ->whereHas('plan', fn (Builder $plan) => $plan->where('is_active', true)->where('price', '>', 0))
+            ->where(fn (Builder $source) => $source->whereNotNull('granted_by')
+                ->orWhereHas('payments', fn (Builder $payments) => $payments->where('status', 'paid')));
+    }
+
+    public static function nextStartFor(User $user, CarbonImmutable $now): ?CarbonImmutable
+    {
+        $subscriptions = $user->subscriptions()->eligible()
+            ->where(fn (Builder $dates) => $dates->whereNull('ends_at')->orWhere('ends_at', '>', $now))
+            ->lockForUpdate()->get(['ends_at']);
+
+        if ($subscriptions->contains(fn (self $subscription) => $subscription->ends_at === null)) {
+            return null;
+        }
+
+        return $subscriptions->reduce(
+            fn (CarbonImmutable $start, self $subscription) => $start->max(CarbonImmutable::instance($subscription->ends_at)),
+            $now,
+        );
+    }
+
+    public function planName(): ?string
+    {
+        return $this->plan_terms['name'] ?? $this->plan?->name;
+    }
+
+    public function analysisLimit(): ?int
+    {
+        return $this->plan_terms !== null ? $this->plan_terms['analysis_limit'] : $this->plan?->analysis_limit;
+    }
+
     /**
      * @param  Builder<Subscription>  $query
      * @return Builder<Subscription>
@@ -59,19 +97,12 @@ class Subscription extends Model
     public function scopeCurrentlyEntitled(Builder $query, CarbonInterface $now): Builder
     {
         return $query
-            ->where('status', 'active')
-            ->whereNull('cancelled_at')
+            ->eligible()
             ->where(function (Builder $query) use ($now): void {
                 $query->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
             })
             ->where(function (Builder $query) use ($now): void {
                 $query->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
-            })
-            ->whereHas('plan', function (Builder $query): void {
-                $query->where('is_active', true)->where('price', '>', 0);
-            })
-            ->whereHas('payments', function (Builder $query): void {
-                $query->where('status', 'paid');
             });
     }
 

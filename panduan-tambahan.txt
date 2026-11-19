@@ -1,0 +1,98 @@
+PERINTAH TAMBAHAN A.I-CHECK
+
+Untuk menyalakan website sehari-hari, ikuti baca.txt.
+Gunakan satu bagian di bawah sesuai kebutuhan. Kode dijalankan di PowerShell
+biasa, kecuali bagian yang ditandai "Kode untuk .env".
+
+1. Cek apakah AI Engine siap
+
+Kode:
+Invoke-RestMethod 'http://127.0.0.1:8766/health' -TimeoutSec 5
+
+Penjelasan:
+Model siap jika hasilnya menunjukkan status ok dan models_loaded True.
+
+
+2. Perbarui tampilan setelah mengubah CSS atau JavaScript
+
+Kode:
+Set-Location -LiteralPath 'C:\laragon\www\A.I-Check'
+npm.cmd run build
+
+Penjelasan:
+Membuat aset baru untuk startup harian dari baca.txt. Jalankan setelah
+mengubah tampilan, lalu muat ulang browser.
+
+
+3. Cek status migrasi database lokal
+
+Kode:
+Set-Location -LiteralPath 'C:\laragon\www\A.I-Check'
+& 'C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe' artisan migrate:status
+
+Penjelasan:
+Menampilkan daftar migrasi dan statusnya. Jalankan bagian 4 bila ada status Pending.
+
+
+4. Terapkan migrasi yang masih Pending
+
+Kode:
+Set-Location -LiteralPath 'C:\laragon\www\A.I-Check'
+& 'C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe' artisan migrate
+
+Penjelasan:
+Menerapkan perubahan struktur yang belum dipasang. Pastikan .env mengarah ke
+database lokal proyek sebelum menjalankan kode ini.
+
+
+5. Tangani analisis yang tertahan
+
+Kode:
+Set-Location -LiteralPath 'C:\laragon\www\A.I-Check'
+& 'C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe' artisan analyses:recover
+
+Penjelasan:
+Menandai analisis yang tertahan 10 menit sebagai gagal dan mengembalikan
+kuotanya. Scheduler dari startup harian sudah menjalankannya otomatis.
+
+
+6. Siapkan pembayaran DANA dan QRIS untuk uji Sandbox
+
+Kode untuk .env:
+MIDTRANS_SERVER_KEY=ISI_DENGAN_SERVER_KEY_SANDBOX
+MIDTRANS_IS_PRODUCTION=false
+
+Penjelasan:
+Ganti nilai contoh dengan Server Key Sandbox milik Anda, lalu mulai ulang
+website dan buka menu Langganan. Untuk menguji Premium sampai aktif,
+ikuti bagian Midtrans Sandbox di README.md untuk pengaturan webhook.
+
+
+7. Nyalakan kotak masuk OTP lokal (Mailpit)
+
+Kode:
+& 'C:\laragon\bin\mailpit\1.22.3\mailpit.exe' --smtp '127.0.0.1:1025' --listen '127.0.0.1:8025'
+
+Penjelasan:
+Membuka layanan email uji di http://127.0.0.1:8025. Biarkan terminal ini
+terbuka dan gunakan pengaturan pada bagian 8 agar email masuk ke Mailpit.
+
+
+8. Hubungkan website ke Mailpit
+
+Kode untuk .env:
+MAIL_MAILER=smtp
+MAIL_SCHEME=smtp
+MAIL_HOST=127.0.0.1
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_URL=null
+MAIL_FROM_ADDRESS=aicheck@example.test
+
+Penjelasan:
+Mulai ulang website, minta OTP untuk akun uji yang sudah terdaftar, lalu
+lihat kodenya di http://127.0.0.1:8025.
+
+
+Persiapan model untuk komputer baru ada di README.md.

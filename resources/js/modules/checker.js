@@ -8,7 +8,7 @@ const gambarPratinjau = document.getElementById('gambar-pratinjau');
 const areaPratinjau = document.getElementById('area-pratinjau');
 const namaFile = document.getElementById('nama-file');
 const ukuranFile = document.getElementById('ukuran-file');
-const tombolHapusGambar = document.getElementById('tombol-hapus-gambar');
+const tombolGantiGambar = document.getElementById('tombol-ganti-gambar');
 const tombolAnalisis = document.getElementById('tombol-analisis');
 const teksTombolAnalisis = document.getElementById('teks-tombol-analisis');
 const tombolUnggahBaru = document.getElementById('tombol-unggah-baru');
@@ -17,6 +17,7 @@ const isiKemajuan = document.getElementById('isi-kemajuan');
 const lajurProgres = document.querySelector('.lajur-progres[role="progressbar"]');
 const nilaiKemajuan = document.getElementById('nilai-kemajuan');
 const statusKemajuan = document.getElementById('status-kemajuan');
+const tautanRiwayatAntrean = document.getElementById('tautan-riwayat-antrean');
 const areaSiapAnalisis = document.getElementById('area-siap-analisis');
 const hasilAnalisis = document.getElementById('hasil-analisis');
 const pesanChecker = document.getElementById('pesan-checker');
@@ -48,7 +49,7 @@ const aturTampilanHasil = (terlihat) => {
     tampilanHasil.classList.toggle('is-visible', terlihat);
 };
 
-const tampilkanPesan = (pesan, { error = false, tautanLogin = false } = {}) => {
+const tampilkanPesan = (pesan, { error = false, tautanLogin = false, tautanRiwayat = false } = {}) => {
     if (pesanChecker) {
         pesanChecker.textContent = pesan;
         pesanChecker.hidden = false;
@@ -59,11 +60,8 @@ const tampilkanPesan = (pesan, { error = false, tautanLogin = false } = {}) => {
 
     if (tombolUnggahBaru) tombolUnggahBaru.hidden = true;
     hasilAnalisis.replaceChildren();
-    const pesanElement = document.createElement('p');
-    pesanElement.className = error ? 'checker-message-error' : 'checker-message-success';
-    pesanElement.setAttribute('role', error ? 'alert' : 'status');
-    pesanElement.textContent = pesan;
-    hasilAnalisis.append(pesanElement);
+    if (areaSiapAnalisis) areaSiapAnalisis.hidden = tautanLogin || tautanRiwayat;
+    hasilAnalisis.hidden = !tautanLogin && !tautanRiwayat;
 
     if (tautanLogin && inputGambar?.dataset.authUrl) {
         const loginLink = document.createElement('a');
@@ -73,25 +71,30 @@ const tampilkanPesan = (pesan, { error = false, tautanLogin = false } = {}) => {
         hasilAnalisis.append(loginLink);
     }
 
-    if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;
-    hasilAnalisis.hidden = false;
+    if (tautanRiwayat && inputGambar?.dataset.historyUrl) {
+        const historyLink = document.createElement('a');
+        historyLink.href = inputGambar.dataset.historyUrl;
+        historyLink.className = 'btn btn-secondary';
+        historyLink.textContent = 'Buka Riwayat';
+        hasilAnalisis.append(historyLink);
+    }
 };
 const tampilkanPrediksi = (payload) => {
     const hasil = {
         'AI-GENERATED': {
-            interpretasi: 'Model memberi kategori AI-GENERATED. Ini merupakan indikasi dari prediksi model, bukan bukti independen bahwa gambar dibuat menggunakan AI.',
+            interpretasi: 'Gambar kemungkinan dibuat dengan AI.',
             kelas: 'status-ai',
         },
         'AI-EDITED': {
-            interpretasi: 'Model memberi kategori AI-EDITED. Ini merupakan indikasi dari prediksi model, bukan bukti independen bahwa gambar telah diedit menggunakan AI.',
+            interpretasi: 'Gambar kemungkinan diedit dengan bantuan AI.',
             kelas: 'status-ai',
         },
         REAL: {
-            interpretasi: 'Model memberi kategori REAL. Prediksi ini tidak membuktikan bahwa gambar autentik atau tidak pernah dimanipulasi.',
+            interpretasi: 'Model menilai gambar lebih cenderung berasal dari manusia.',
             kelas: 'status-real',
         },
         UNCERTAIN: {
-            interpretasi: 'Model memberi kategori UNCERTAIN, sehingga kategori gambar belum dapat ditentukan dari hasil prediksi ini.',
+            interpretasi: 'Model belum cukup yakin untuk menentukan kategori gambar.',
             kelas: 'status-uncertain',
         },
     }[payload.result_label];
@@ -131,28 +134,16 @@ const tampilkanPrediksi = (payload) => {
     nilaiSkor.textContent = `${(scoreAI * 100).toFixed(2)}%`;
     skor.append(labelSkor, nilaiSkor);
 
-    const judulKeterangan = document.createElement('h3');
-    judulKeterangan.className = 'judul-keterangan-analisis';
-    judulKeterangan.textContent = 'Keterangan Analisis';
+    const interpretasi = document.createElement('p');
+    interpretasi.className = 'deskripsi-panel';
+    interpretasi.textContent = `${hasil.interpretasi} Hasil ini adalah estimasi model.`;
 
-    const buatBagianKeterangan = (judul, isi) => {
-        const bagian = document.createElement('section');
-        bagian.className = 'bagian-keterangan-analisis';
+    const rincian = document.createElement('details');
+    rincian.className = 'bagian-keterangan-analisis';
+    const ringkasan = document.createElement('summary');
+    ringkasan.textContent = 'Detail pemeriksaan';
+    rincian.append(ringkasan);
 
-        const subjudul = document.createElement('h4');
-        subjudul.textContent = judul;
-
-        const keterangan = document.createElement('p');
-        keterangan.textContent = isi;
-
-        bagian.append(subjudul, keterangan);
-        return bagian;
-    };
-
-    const bagianHasilModel = buatBagianKeterangan(
-        'A. Hasil model',
-        `${payload.result_label} — Probabilitas AI ${nilaiSkor.textContent}.`,
-    );
     const details = payload.prediction_details && typeof payload.prediction_details === 'object'
         ? payload.prediction_details
         : {};
@@ -171,34 +162,31 @@ const tampilkanPrediksi = (payload) => {
     const thresholdEvidence = typeof details.threshold === 'number'
         ? `Operating point ${details.operating_point || 'tidak tersedia'}; ambang AI ${(details.threshold * 100).toFixed(2)}%.`
         : '';
-    const bagianBukti = buatBagianKeterangan(
-        'B. Bukti pendukung',
-        [
-            basisEvidence,
-            thresholdEvidence,
-            modelScores ? `Skor per model: ${modelScores}.` : '',
-            metadataEvidence,
-        ].filter(Boolean).join(' '),
-    );
-    const bagianInterpretasi = buatBagianKeterangan(
-        'C. Interpretasi',
-        hasil.interpretasi,
-    );
-    const bagianKeterbatasan = buatBagianKeterangan(
-        'D. Keterbatasan',
-        'Probabilitas AI adalah estimasi model, bukan tingkat kepastian atau akurasi hasil. Model dapat keliru, dan metadata/provenance hanya merupakan petunjuk tambahan; hasil ini bukan bukti asal-usul gambar.',
-    );
+    const waktu = payload.created_at ? new Date(payload.created_at) : null;
+    const informasi = [
+        payload.id ? `ID analisis: #${payload.id}` : '',
+        waktu && !Number.isNaN(waktu.getTime()) ? `Waktu: ${waktu.toLocaleString('id-ID')}` : '',
+        basisEvidence,
+        thresholdEvidence,
+        modelScores ? `Skor per model: ${modelScores}.` : '',
+        metadataEvidence,
+    ];
+    for (const item of informasi.filter(Boolean)) {
+        const baris = document.createElement('p');
+        baris.textContent = item;
+        rincian.append(baris);
+    }
 
-    hasilAnalisis?.replaceChildren(
-        heading,
-        badge,
-        skor,
-        judulKeterangan,
-        bagianHasilModel,
-        bagianBukti,
-        bagianInterpretasi,
-        bagianKeterbatasan,
-    );
+    hasilAnalisis?.replaceChildren(heading, badge, skor, interpretasi, rincian);
+    if (hasilAnalisis && inputGambar?.dataset.historyUrl && payload.id) {
+        const tautan = document.createElement('a');
+        const url = new URL(inputGambar.dataset.historyUrl, window.location.href);
+        url.searchParams.set('analysis', payload.id);
+        tautan.href = url.href;
+        tautan.className = 'btn btn-secondary btn-full tombol-riwayat-hasil';
+        tautan.textContent = 'Lihat di Riwayat';
+        hasilAnalisis.append(tautan);
+    }
     if (hasilAnalisis) hasilAnalisis.hidden = false;
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = true;
     if (tombolUnggahBaru) tombolUnggahBaru.hidden = false;
@@ -216,13 +204,16 @@ const perbaruiKuota = (quota) => {
     }
 
     const resetText = quota.resets_at
-        ? `Penggunaan terlama berikutnya direset ${new Date(quota.resets_at).toLocaleString('id-ID')}.`
+        ? `Kuota bertambah ${new Date(quota.resets_at).toLocaleString('id-ID')}.`
         : '';
     ringkasanKuota.replaceChildren(
-        document.createTextNode(`Kuota 7 hari berjalan: ${quota.used} dari ${quota.limit} analisis`),
-        document.createElement('br'),
-        document.createTextNode(resetText),
+        document.createTextNode(`${quota.used} dari ${quota.limit} analisis terpakai dalam 7 hari berjalan`),
     );
+    if (resetText) {
+        const nextQuota = document.createElement('span');
+        nextQuota.textContent = resetText;
+        ringkasanKuota.append(nextQuota);
+    }
 };
 
 const pollingAnalisis = async (analysisId) => {
@@ -235,11 +226,13 @@ const pollingAnalisis = async (analysisId) => {
         throw new Error('URL status analisis tidak tersedia.');
     }
 
-    while (true) {
+    const batasWaktu = Date.now() + 120_000;
+    while (Date.now() < batasWaktu) {
         await new Promise((resolve) => window.setTimeout(resolve, 2000));
         const response = await fetch(statusUrl, {
             headers: { Accept: 'application/json' },
             credentials: 'same-origin',
+            signal: AbortSignal.timeout(10_000),
         });
         const payload = await response.json();
 
@@ -251,6 +244,7 @@ const pollingAnalisis = async (analysisId) => {
 
         if (payload.status === 'completed') {
             aturProgres(100);
+            if (tautanRiwayatAntrean) tautanRiwayatAntrean.hidden = true;
             const predictionIsValid = tampilkanPrediksi(payload);
             if (kemajuanAnalisis) kemajuanAnalisis.hidden = true;
             unggahanBerlangsung = false;
@@ -268,6 +262,7 @@ const pollingAnalisis = async (analysisId) => {
                 kemajuanAnalisis.setAttribute('aria-busy', 'false');
             }
             aturStatusTombol();
+            if (tautanRiwayatAntrean) tautanRiwayatAntrean.hidden = true;
             tampilkanPesan('Analisis gagal diproses. Silakan coba kembali.', { error: true });
             return;
         }
@@ -276,8 +271,11 @@ const pollingAnalisis = async (analysisId) => {
             throw new Error('Status analisis tidak dikenali.');
         }
 
-        if (statusKemajuan) statusKemajuan.textContent = 'Gambar sedang dianalisis. Tetap buka halaman ini atau lihat Riwayat Analisis.';
+        if (statusKemajuan) {
+            statusKemajuan.textContent = payload.status === 'pending' ? 'Masuk antrean' : 'Sedang dianalisis';
+        }
     }
+    throw new Error('Analisis masih diproses. Periksa hasilnya di Riwayat.');
 };
 
 const aturProgres = (nilai) => {
@@ -290,12 +288,11 @@ const aturStatusTombol = (unggahanSelesai = false) => {
     if (!tombolAnalisis) return;
 
     tombolAnalisis.disabled = unggahanBerlangsung || unggahanSelesai;
+    if (tombolGantiGambar) tombolGantiGambar.disabled = unggahanBerlangsung;
     if (teksTombolAnalisis) {
         teksTombolAnalisis.textContent = unggahanSelesai
             ? 'Analisis Selesai'
-            : fileTerpilih
-                ? 'Periksa'
-                : 'Unggah Gambar';
+            : 'Analisis gambar';
     }
 };
 
@@ -315,6 +312,7 @@ const resetPemeriksaan = () => {
         pesanChecker.classList.remove('is-error');
     }
     if (kemajuanAnalisis) kemajuanAnalisis.hidden = true;
+    if (tautanRiwayatAntrean) tautanRiwayatAntrean.hidden = true;
     if (kemajuanAnalisis) kemajuanAnalisis.setAttribute('aria-busy', 'false');
     if (statusKemajuan) statusKemajuan.textContent = 'Mengunggah gambar...';
     if (hasilAnalisis) {
@@ -331,7 +329,7 @@ const resetPemeriksaan = () => {
 };
 
 const pilihFile = (file) => {
-    if (!file) return;
+    if (!file || unggahanBerlangsung) return;
 
     if (!mimeDidukung.includes(file.type)) {
         resetPemeriksaan();
@@ -377,6 +375,9 @@ const unggahGambar = () => {
     aturStatusTombol();
     if (pesanChecker) pesanChecker.hidden = true;
     if (kemajuanAnalisis) kemajuanAnalisis.hidden = false;
+    if (tautanRiwayatAntrean) tautanRiwayatAntrean.hidden = true;
+    if (nilaiKemajuan) nilaiKemajuan.hidden = false;
+    if (lajurProgres) lajurProgres.hidden = false;
     if (kemajuanAnalisis) kemajuanAnalisis.setAttribute('aria-busy', 'true');
     if (statusKemajuan) statusKemajuan.textContent = 'Mengunggah gambar...';
     if (areaSiapAnalisis) areaSiapAnalisis.hidden = false;
@@ -395,7 +396,7 @@ const unggahGambar = () => {
     });
 
     request.upload.addEventListener('load', () => {
-        if (statusKemajuan) statusKemajuan.textContent = 'Gambar diterima. Menunggu analisis AI...';
+        if (statusKemajuan) statusKemajuan.textContent = 'Memeriksa unggahan…';
     });
 
     request.addEventListener('load', () => {
@@ -410,6 +411,7 @@ const unggahGambar = () => {
         }
 
         if (request.status === 201 && payload.status === 'completed') {
+            unggahanBerlangsung = false;
             aturProgres(100);
             const predictionIsValid = tampilkanPrediksi(payload);
             if (kemajuanAnalisis) kemajuanAnalisis.hidden = true;
@@ -419,10 +421,13 @@ const unggahGambar = () => {
 
         if (request.status === 202 && payload.status === 'pending' && payload.id) {
             menungguAnalisis = true;
-            aturProgres(99);
+            if (kemajuanAnalisis) kemajuanAnalisis.setAttribute('aria-busy', 'false');
+            if (tautanRiwayatAntrean) tautanRiwayatAntrean.hidden = false;
+            if (nilaiKemajuan) nilaiKemajuan.hidden = true;
+            if (lajurProgres) lajurProgres.hidden = true;
             perbaruiKuota(payload.quota);
-            if (statusKemajuan) statusKemajuan.textContent = payload.message || 'Gambar diterima. Menunggu analisis AI...';
-            pollingAnalisis(payload.id).catch(() => {
+            if (statusKemajuan) statusKemajuan.textContent = 'Masuk antrean';
+            pollingAnalisis(payload.id).catch((error) => {
                 unggahanBerlangsung = false;
                 menungguAnalisis = false;
                 if (kemajuanAnalisis) {
@@ -430,7 +435,10 @@ const unggahGambar = () => {
                     kemajuanAnalisis.setAttribute('aria-busy', 'false');
                 }
                 aturStatusTombol();
-                tampilkanPesan('Status belum dapat diperiksa. Anda dapat membuka Riwayat Analisis untuk melihat pembaruan.', { error: true });
+                const pesan = error.message === 'Analisis masih diproses. Periksa hasilnya di Riwayat.'
+                    ? 'Analisis masih diproses.'
+                    : 'Status belum dapat diperiksa.';
+                tampilkanPesan(pesan, { error: true, tautanRiwayat: true });
             });
             return;
         }
@@ -469,7 +477,11 @@ const unggahGambar = () => {
 
 tombolPilihGambar?.addEventListener('click', () => inputGambar?.click());
 inputGambar?.addEventListener('change', () => pilihFile(inputGambar.files?.[0]));
-tombolHapusGambar?.addEventListener('click', resetPemeriksaan);
+tombolGantiGambar?.addEventListener('click', () => {
+    if (!inputGambar || unggahanBerlangsung) return;
+    inputGambar.value = '';
+    inputGambar.click();
+});
 tombolAnalisis?.addEventListener('click', unggahGambar);
 tombolUnggahBaru?.addEventListener('click', () => {
     resetPemeriksaan();

@@ -11,6 +11,8 @@ use RuntimeException;
 
 class MidtransSnapClient
 {
+    public const PAYMENT_METHODS = ['dana' => 'DANA', 'other_qris' => 'QRIS'];
+
     public function assertConfigured(): void
     {
         $serverKey = config('midtrans.server_key');
@@ -23,7 +25,7 @@ class MidtransSnapClient
     /**
      * @return array{redirect_url: string, transaction_id: string|null}
      */
-    public function createCheckout(Payment $payment, Plan $plan, User $user, string $finishUrl): array
+    public function createCheckout(Payment $payment, Plan $plan, User $user, string $finishUrl, ?string $paymentMethod = null): array
     {
         $this->assertConfigured();
 
@@ -54,6 +56,10 @@ class MidtransSnapClient
                     'customer_details' => [
                         'first_name' => mb_substr($user->name, 0, 50),
                         'email' => $user->email,
+                    ],
+                    'enabled_payments' => $paymentMethod === null ? array_keys(self::PAYMENT_METHODS) : [$paymentMethod],
+                    'dana' => [
+                        'callback_url' => $finishUrl,
                     ],
                     'callbacks' => [
                         'finish' => $finishUrl,

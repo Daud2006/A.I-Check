@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ImageAnalysis;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,11 +42,7 @@ class HistoryController extends Controller
     public function destroy(Request $request, int $analysisId): JsonResponse
     {
         $analysis = $request->user()->imageAnalyses()->findOrFail($analysisId);
-        $imagePath = $analysis->image_path;
-
-        DB::transaction(fn () => $analysis->delete());
-
-        $cleanupComplete = $this->deleteImageIfUnreferenced($imagePath);
+        $cleanupComplete = $this->deleteAnalysis($analysis);
 
         return response()->json([
             'message' => $cleanupComplete
@@ -52,6 +50,29 @@ class HistoryController extends Controller
                 : 'Riwayat dihapus, tetapi file gambar belum dapat dibersihkan.',
             'cleanup_complete' => $cleanupComplete,
         ]);
+    }
+
+    public function destroyAsAdmin(Request $request, int $analysisId): RedirectResponse
+    {
+        abort_unless($request->user()->role === User::ROLE_ADMIN, 403);
+        $analysis = ImageAnalysis::query()->findOrFail($analysisId);
+        if (! in_array($analysis->status, ['completed', 'failed'], true)) {
+            return redirect()->route('admin.analyses.index')->with('status', 'Tunggu analisis selesai sebelum menghapusnya.');
+        }
+
+        $cleanupComplete = $this->deleteAnalysis($analysis);
+        Log::notice('Admin deleted analysis.', ['admin_id' => $request->user()->id, 'analysis_id' => $analysisId]);
+
+        return redirect()->route('admin.analyses.index')->with('status', $cleanupComplete
+            ? 'Analisis dihapus dari Riwayat pengguna.'
+            : 'Analisis dihapus. File gambar belum dapat dibersihkan.');
+    }
+
+    private function deleteAnalysis(ImageAnalysis $analysis): bool
+    {
+        DB::transaction(fn () => $analysis->delete());
+
+        return $this->deleteImageIfUnreferenced($analysis->image_path);
     }
 
     public function destroyAll(Request $request): JsonResponse

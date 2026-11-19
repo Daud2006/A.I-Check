@@ -1,4 +1,7 @@
 /* Gaya riwayat. */
+#paginasi-riwayat[hidden] {
+    display: none;
+}
 .halaman-riwayat {
     min-height: 70vh;
     padding: var(--space-section) 0;
@@ -69,7 +72,7 @@
     position: relative;
     min-width: 0;
 }
-.tombol-pencarian-riwayat {
+.ikon-pencarian-riwayat {
     position: absolute;
     z-index: 1;
     left: 12px;
@@ -78,21 +81,9 @@
     width: 24px;
     height: 24px;
     place-items: center;
-    border: 0;
-    border-radius: 6px;
-    background: transparent;
-    color: #94a3b8;
-    cursor: pointer;
+    color: var(--slate-600);
+    pointer-events: none;
     transform: translateY(-50%);
-}
-.tombol-pencarian-riwayat:hover,
-.tombol-pencarian-riwayat:focus-visible {
-    background: #eff6ff;
-    color: #1d4ed8;
-}
-.tombol-pencarian-riwayat:focus-visible {
-    outline: 2px solid #2563eb;
-    outline-offset: 2px;
 }
 .pencarian-riwayat .form-control {
     box-sizing: border-box;

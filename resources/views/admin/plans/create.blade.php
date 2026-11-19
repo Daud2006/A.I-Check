@@ -7,7 +7,7 @@
         <a href="{{ route('admin.plans.index') }}" class="admin-back-link">Kembali ke paket</a>
         <div class="admin-page-heading">
             <div>
-                <span class="eyebrow">Administrasi</span>
+
                 <h1 class="admin-title" id="admin-plan-create-title">Tambah paket</h1>
                 <p class="admin-description">Data paket disimpan sesuai kolom yang tersedia pada database.</p>
             </div>

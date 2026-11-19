@@ -23,6 +23,26 @@
     gap: 24px;
 }
 
+@media (min-width: 1200px) {
+    .isi-header,
+    .isi-footer {
+        width: calc(100% - 2 * clamp(24px, 2.5vw, 48px));
+    }
+
+    .isi-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    }
+
+    .isi-header > .logo-website {
+        justify-self: start;
+    }
+
+    .isi-header > .aksi-header {
+        justify-self: end;
+    }
+}
+
 .logo-website {
     display: inline-flex;
     align-items: center;
@@ -32,17 +52,9 @@
     letter-spacing: -0.04em;
 }
 .tanda-logo {
-    width: 40px;
-    height: 40px;
-    display: grid;
-    place-items: center;
+    flex: none;
     border-radius: 12px;
-    background: var(--blue-700);
-    color: #fff;
     box-shadow: 0 10px 22px rgba(8, 102, 216, 0.15);
-}
-.aksen-logo {
-    color: var(--blue-500);
 }
 
 .menu-navigasi {
@@ -72,6 +84,10 @@
     align-items: center;
     gap: 12px;
 }
+.menu-akun {
+    position: relative;
+    min-width: 0;
+}
 .user-chip {
     display: flex;
     align-items: center;
@@ -81,6 +97,16 @@
     border-radius: 12px;
     background: #fff;
     box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04);
+    cursor: pointer;
+    list-style: none;
+}
+.user-chip::-webkit-details-marker {
+    display: none;
+}
+.user-chip:hover,
+.menu-akun[open] > .user-chip {
+    border-color: #bfdbfe;
+    background: #f8fbff;
 }
 .user-avatar {
     width: 36px;
@@ -92,25 +118,70 @@
     color: #fff;
     font-size: 14px;
     font-weight: 700;
+    flex: 0 0 auto;
 }
 .user-meta {
     max-width: 128px;
-    line-height: 1.2;
-}
-.user-meta strong,
-.user-meta span {
-    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--slate-900);
+    font-size: 13px;
+    font-weight: 700;
 }
-.user-meta strong {
-    font-size: 12px;
+.panah-menu-akun {
+    width: 7px;
+    height: 7px;
+    margin-inline: 2px 5px;
+    border: solid var(--muted);
+    border-width: 0 1.5px 1.5px 0;
+    transform: translateY(-2px) rotate(45deg);
+    flex: 0 0 auto;
 }
-.user-meta span {
-    margin-top: 3px;
-    color: #94a3b8;
-    font-size: 10px;
+.menu-akun[open] .panah-menu-akun {
+    transform: translateY(2px) rotate(225deg);
+}
+.panel-menu-akun {
+    position: absolute;
+    inset-inline-end: 0;
+    top: calc(100% + 8px);
+    min-width: 208px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+}
+.panel-menu-akun a,
+.panel-menu-akun button {
+    display: flex;
+    width: 100%;
+    min-height: 42px;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    background: transparent;
+    color: var(--slate-700);
+    font-size: 14px;
+    text-align: start;
+}
+.panel-menu-akun a:hover,
+.panel-menu-akun a[aria-current="page"] {
+    background: var(--blue-100);
+    color: var(--blue-900);
+}
+.panel-menu-akun form {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+}
+.panel-menu-akun button {
+    color: var(--red-700);
+}
+.panel-menu-akun button:hover {
+    background: #fef2f2;
 }
 .icon-button {
     display: grid;
@@ -140,9 +211,6 @@
     border-top: 1px solid #f1f5f9;
     background: #fff;
     box-shadow: var(--shadow-card);
-}
-.menu-mobile.is-open {
-    display: block;
 }
 .tautan-menu-mobile {
     display: block;
@@ -178,16 +246,21 @@
 .logo-footer {
     color: var(--blue-700);
 }
-.daya-footer {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+.tautan-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 20px;
 }
-.titik-daya {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #3b82f6;
+.tautan-footer a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+}
+.tautan-dokumen {
+    color: var(--blue-800);
+    text-decoration: underline;
+    text-underline-offset: 0.16em;
 }
 
 @media (max-width: 900px) {
@@ -208,6 +281,21 @@
     }
     .tombol-menu-mobile {
         display: grid;
+    }
+    .menu-mobile.is-open {
+        display: block;
+    }
+    .menu-mobile .menu-akun {
+        margin-top: 8px;
+    }
+    .menu-mobile .user-meta {
+        max-width: none;
+        flex: 1;
+    }
+    .menu-mobile .panel-menu-akun {
+        position: static;
+        margin-top: 8px;
+        box-shadow: none;
     }
     .isi-footer {
         flex-direction: column;

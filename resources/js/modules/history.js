@@ -9,13 +9,18 @@ if (daftarRiwayat) {
     const urlHapus = daftarRiwayat.dataset.deleteUrl;
     const urlHapusSemua = daftarRiwayat.dataset.deleteAllUrl;
     const pencarianRiwayat = document.getElementById('pencarian-riwayat');
-    const tombolPencarianRiwayat = document.getElementById('tombol-pencarian-riwayat');
     const filterRiwayat = document.getElementById('filter-riwayat');
     const urutanRiwayat = document.getElementById('urutan-riwayat');
     const tombolHapusSemua = document.getElementById('tombol-hapus-riwayat');
     const modalDetailRiwayat = document.getElementById('modal-detail-riwayat');
+    const paginasi = document.getElementById('paginasi-riwayat');
+    const sebelumnya = document.getElementById('riwayat-sebelumnya');
+    const berikutnya = document.getElementById('riwayat-berikutnya');
+    const nomorHalaman = document.getElementById('nomor-halaman-riwayat');
+    const ukuranHalaman = 12;
 
     let riwayat = [];
+    let halaman = 1;
     let idRiwayatAktif = null;
     let sedangMenghapus = false;
 
@@ -462,6 +467,13 @@ if (daftarRiwayat) {
 
         daftarRiwayat.replaceChildren();
 
+        const totalHalaman = Math.max(1, Math.ceil(filtered.length / ukuranHalaman));
+        halaman = Math.min(halaman, totalHalaman);
+        paginasi.hidden = totalHalaman === 1;
+        sebelumnya.disabled = halaman === 1;
+        berikutnya.disabled = halaman === totalHalaman;
+        nomorHalaman.textContent = `${halaman} / ${totalHalaman}`;
+
         if (!filtered.length) {
             const empty = riwayat.length
                 ? buatKeadaanKosong(
@@ -477,7 +489,8 @@ if (daftarRiwayat) {
             return;
         }
 
-        filtered.forEach((item) => {
+        const awalHalaman = (halaman - 1) * ukuranHalaman;
+        filtered.slice(awalHalaman, awalHalaman + ukuranHalaman).forEach((item) => {
             daftarRiwayat.append(buatBarisRiwayat(item));
         });
     };
@@ -661,16 +674,24 @@ if (daftarRiwayat) {
         }
     });
 
-    [pencarianRiwayat, filterRiwayat, urutanRiwayat].forEach((element) => {
-        element?.addEventListener('input', renderRiwayat);
-    });
+    const resetHalaman = () => {
+        halaman = 1;
+        renderRiwayat();
+    };
 
-    tombolPencarianRiwayat?.addEventListener('click', () => {
-        pencarianRiwayat?.focus();
+    pencarianRiwayat?.addEventListener('input', resetHalaman);
+    filterRiwayat?.addEventListener('change', resetHalaman);
+    urutanRiwayat?.addEventListener('change', resetHalaman);
+    sebelumnya.addEventListener('click', () => {
+        if (halaman <= 1) return;
+        halaman--;
+        renderRiwayat();
     });
-
-    filterRiwayat?.addEventListener('change', renderRiwayat);
-    urutanRiwayat?.addEventListener('change', renderRiwayat);
+    berikutnya.addEventListener('click', () => {
+        if (berikutnya.disabled) return;
+        halaman++;
+        renderRiwayat();
+    });
 
     document.getElementById('tombol-tutup-detail')?.addEventListener(
         'click',
@@ -701,6 +722,9 @@ if (daftarRiwayat) {
         riwayat = Array.isArray(parsed) ? parsed : [];
 
         renderRiwayat();
+        const analysisId = new URLSearchParams(window.location.search).get('analysis');
+        const analysis = riwayat.find((item) => String(item.id) === analysisId);
+        if (analysis) bukaDetailRiwayat(analysis);
     } catch {
         daftarRiwayat.replaceChildren(
             buatKeadaanKosong(

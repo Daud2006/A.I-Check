@@ -32,13 +32,9 @@ class AdminReportController extends Controller
         $filters = $this->validatedFilters($request);
 
         $usersInPeriod = $this->userQuery($filters, true);
-        $usersByRole = (clone $usersInPeriod)
-            ->select('role', DB::raw('COUNT(*) as total'))
-            ->groupBy('role')
-            ->orderBy('role')
-            ->get();
         $usersByPlan = Subscription::query()
             ->currentlyEntitled(now())
+            ->whereHas('user', fn (Builder $users) => $users->where('role', User::ROLE_USER))
             ->join('plans', 'plans.id', '=', 'subscriptions.plan_id')
             ->when($filters['plan_id'] !== '', fn (Builder $query): Builder => $query->where('plans.id', $filters['plan_id']))
             ->select('plans.id', 'plans.name', DB::raw('COUNT(DISTINCT subscriptions.user_id) as users_count'))
@@ -114,7 +110,6 @@ class AdminReportController extends Controller
             'plans' => Plan::query()->orderBy('name')->get(['id', 'name']),
             'userCount' => $this->userQuery($filters, false)->count(),
             'newUserCount' => (clone $usersInPeriod)->count(),
-            'usersByRole' => $usersByRole,
             'usersByPlan' => $usersByPlan,
             'onlineUsersCount' => $onlineUsersCount,
             'onlineUsersAvailable' => $onlineUsersCount !== null,
@@ -140,7 +135,7 @@ class AdminReportController extends Controller
 
         [$headers, $rows] = match ($type) {
             'users' => [
-                ['ID', 'Nama', 'Email', 'Role', 'Terdaftar'],
+                ['ID', 'Nama', 'Email', 'Terdaftar'],
                 $this->userExportQuery($filters),
             ],
             'analyses' => [
@@ -181,14 +176,13 @@ class AdminReportController extends Controller
     }
 
     /**
-     * @return array{date_from: string, date_to: string, user_role: string, analysis_status: string, result_label: string, payment_status: string, plan_id: string}
+     * @return array{date_from: string, date_to: string, analysis_status: string, result_label: string, payment_status: string, plan_id: string}
      */
     private function validatedFilters(Request $request): array
     {
         $filters = $request->validate([
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date_format:Y-m-d'],
-            'user_role' => ['nullable', Rule::in(User::ROLES)],
             'analysis_status' => ['nullable', Rule::in(ImageAnalysis::STATUSES)],
             'result_label' => ['nullable', Rule::in(self::RESULT_LABELS)],
             'payment_status' => ['nullable', Rule::in(Payment::STATUSES)],
@@ -206,7 +200,6 @@ class AdminReportController extends Controller
         return [
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
-            'user_role' => $filters['user_role'] ?? '',
             'analysis_status' => $filters['analysis_status'] ?? '',
             'result_label' => $filters['result_label'] ?? '',
             'payment_status' => $filters['payment_status'] ?? '',
@@ -217,9 +210,9 @@ class AdminReportController extends Controller
     private function userQuery(array $filters, bool $includeDateRange): Builder
     {
         return User::query()
+            ->where('role', User::ROLE_USER)
             ->when($includeDateRange && $filters['date_from'] !== '', fn (Builder $query): Builder => $query->where('created_at', '>=', CarbonImmutable::parse($filters['date_from'])->startOfDay()))
             ->when($includeDateRange && $filters['date_to'] !== '', fn (Builder $query): Builder => $query->where('created_at', '<', CarbonImmutable::parse($filters['date_to'])->addDay()->startOfDay()))
-            ->when($filters['user_role'] !== '', fn (Builder $query): Builder => $query->where('role', $filters['user_role']))
             ->when($filters['plan_id'] !== '', function (Builder $query) use ($filters): void {
                 $query->whereHas('subscriptions', fn (Builder $subscriptions): Builder => $subscriptions
                     ->currentlyEntitled(now())
@@ -248,7 +241,7 @@ class AdminReportController extends Controller
     private function userExportQuery(array $filters): Builder
     {
         return $this->userQuery($filters, true)
-            ->select(['id', 'name', 'email', 'role', 'created_at'])
+            ->select(['id', 'name', 'email', 'created_at'])
             ->orderBy('id');
     }
 
@@ -301,7 +294,7 @@ class AdminReportController extends Controller
 
         try {
             return DB::table(config('session.table', 'sessions'))
-                ->whereNotNull('user_id')
+                ->whereIn('user_id', User::query()->select('id')->where('role', User::ROLE_USER)->whereNull('disabled_at'))
                 ->where('last_activity', '>=', now()->subMinutes(5)->timestamp)
                 ->distinct()
                 ->count('user_id');

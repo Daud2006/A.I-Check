@@ -77,7 +77,7 @@ class AuthController extends Controller
             'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
-        if (! Auth::attempt($validated, $request->boolean('remember'))) {
+        if (! Auth::attempt($validated + ['disabled_at' => null], $request->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'email' => 'Email atau kata sandi yang Anda masukkan salah.',
             ]);

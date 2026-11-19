@@ -4,6 +4,7 @@ use App\Http\Controllers\AboutController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminPlanController;
 use App\Http\Controllers\AdminReportController;
+use App\Http\Controllers\AdminSubscriptionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckerController;
@@ -35,12 +36,17 @@ Route::middleware('auth')->prefix('checker/analyses')->name('checker.analyses.')
     Route::get('/{analysisId}/image', [CheckerController::class, 'image'])->whereNumber('analysisId')->name('image');
 });
 Route::get('/about', [AboutController::class, 'index'])->name('about');
+Route::view('/terms', 'legal.terms')->name('legal.terms');
+Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
 Route::get('/plans', [BillingController::class, 'plans'])->name('plans.index');
 Route::post('/webhooks/midtrans', MidtransWebhookController::class)
     ->withoutMiddleware(ValidateCsrfToken::class)
     ->name('webhooks.midtrans');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/checkout/{plan}', [BillingController::class, 'checkoutSummary'])
+        ->whereNumber('plan')
+        ->name('checkout.show');
     Route::post('/checkout/{plan}', [BillingController::class, 'checkout'])
         ->whereNumber('plan')
         ->name('checkout.store');
@@ -63,11 +69,20 @@ Route::get('/admin', [AdminController::class, 'index'])
     ->name('admin');
 Route::middleware('auth')->prefix('admin/users')->name('admin.users.')->group(function () {
     Route::get('/', [AdminController::class, 'users'])->name('index');
+    Route::get('/create', [AdminController::class, 'createUser'])->name('create');
+    Route::post('/', [AdminController::class, 'storeUser'])->middleware('throttle:20,1')->name('store');
     Route::get('/{userId}', [AdminController::class, 'showUser'])->whereNumber('userId')->name('show');
+    Route::get('/{userId}/edit', [AdminController::class, 'editUser'])->whereNumber('userId')->name('edit');
+    Route::put('/{userId}', [AdminController::class, 'updateUser'])->whereNumber('userId')->name('update');
+    Route::delete('/{userId}', [AdminController::class, 'destroyUser'])->whereNumber('userId')->name('destroy');
+    Route::patch('/{userId}/enable', [AdminController::class, 'enableUser'])->whereNumber('userId')->name('enable');
 });
+Route::get('/admin/subscriptions', [AdminSubscriptionController::class, 'index'])
+    ->middleware('auth')->name('admin.subscriptions.index');
 Route::middleware('auth')->prefix('admin/analyses')->name('admin.analyses.')->group(function () {
     Route::get('/', [AdminController::class, 'analyses'])->name('index');
     Route::get('/{analysisId}', [AdminController::class, 'showAnalysis'])->whereNumber('analysisId')->name('show');
+    Route::delete('/{analysisId}', [HistoryController::class, 'destroyAsAdmin'])->whereNumber('analysisId')->name('destroy');
 });
 Route::middleware('auth')->prefix('admin/transactions')->name('admin.transactions.')->group(function () {
     Route::get('/', [AdminController::class, 'transactions'])->name('index');
@@ -77,6 +92,8 @@ Route::middleware('auth')->prefix('admin/plans')->name('admin.plans.')->group(fu
     Route::get('/', [AdminPlanController::class, 'index'])->name('index');
     Route::get('/create', [AdminPlanController::class, 'create'])->name('create');
     Route::post('/', [AdminPlanController::class, 'store'])->name('store');
+    Route::get('/gift', [AdminSubscriptionController::class, 'createGift'])->name('gift.create');
+    Route::post('/gift', [AdminSubscriptionController::class, 'storeGift'])->middleware('throttle:20,1')->name('gift.store');
     Route::get('/{plan}', [AdminPlanController::class, 'show'])->whereNumber('plan')->name('show');
     Route::get('/{plan}/edit', [AdminPlanController::class, 'edit'])->whereNumber('plan')->name('edit');
     Route::put('/{plan}', [AdminPlanController::class, 'update'])->whereNumber('plan')->name('update');

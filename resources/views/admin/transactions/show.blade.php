@@ -23,7 +23,7 @@
         <div class="admin-user-profile-heading">
             <span class="admin-user-profile-avatar" aria-hidden="true">@include('icon', ['name' => 'check'])</span>
             <div>
-                <span class="eyebrow">Pembayaran</span>
+
                 <h1 class="admin-title" id="admin-transaction-detail-title">Transaksi #{{ $payment->id }}</h1>
                 <p class="admin-description">{{ $payment->created_at?->format('d/m/Y H:i:s') ?? 'Waktu tidak tersedia' }}</p>
             </div>
@@ -40,10 +40,13 @@
                 <dl class="admin-user-info-list">
                     <div><dt>Jumlah</dt><dd>{{ $payment->currency }} {{ number_format((float) $payment->amount, 2, ',', '.') }}</dd></div>
                     <div><dt>Provider</dt><dd>{{ $payment->provider ?? 'Tidak tersedia' }}</dd></div>
-                    <div><dt>ID transaksi provider</dt><dd>{{ $payment->provider_transaction_id ?? 'Belum tersedia' }}</dd></div>
+                    <div><dt>ID pesanan Midtrans</dt><dd>{{ $payment->provider === 'midtrans' ? 'AIC-PAY-'.$payment->id : '—' }}</dd></div>
+                    <div><dt>ID transaksi Midtrans</dt><dd>{{ $payment->provider_transaction_id ?? 'Belum tersedia' }}</dd></div>
                     <div><dt>Status</dt><dd>{{ $payment->status }}</dd></div>
                     <div><dt>Waktu dibayar</dt><dd>{{ $payment->paid_at?->format('d/m/Y H:i:s') ?? 'Belum dibayar' }}</dd></div>
-                    <div><dt>Metode pembayaran</dt><dd>Tidak disimpan pada skema transaksi saat ini</dd></div>
+                    <div><dt>Metode pembayaran</dt><dd>{{ match ($payment->payment_method) {'dana' => 'DANA', 'qris' => 'QRIS', default => 'Belum tercatat'} }}</dd></div>
+                    <div><dt>Lingkungan</dt><dd>{{ match ($payment->environment) {'production' => 'Produksi', 'sandbox' => 'Sandbox', default => 'Belum tercatat'} }}</dd></div>
+                    <div><dt>Webhook terverifikasi</dt><dd>{{ $payment->verified_at?->format('d/m/Y H:i:s') ?? 'Belum tercatat' }}</dd></div>
                 </dl>
             </section>
 
@@ -57,7 +60,7 @@
                 <dl class="admin-user-info-list">
                     <div><dt>Nama pengguna</dt><dd>{{ $payment->user?->name ?? 'Pengguna tidak tersedia' }}</dd></div>
                     <div><dt>Email</dt><dd>{{ $payment->user?->email ?? 'Tidak tersedia' }}</dd></div>
-                    <div><dt>Paket</dt><dd>{{ $payment->subscription?->plan?->name ?? 'Tidak tersedia' }}</dd></div>
+                    <div><dt>Paket</dt><dd>{{ $payment->subscription?->planName() ?? 'Tidak tersedia' }}</dd></div>
                     <div><dt>Status subscription</dt><dd>{{ $payment->subscription?->status ?? 'Tidak tersedia' }}</dd></div>
                     <div><dt>Mulai</dt><dd>{{ $payment->subscription?->starts_at?->format('d/m/Y H:i') ?? 'Belum tersedia' }}</dd></div>
                     <div><dt>Berakhir</dt><dd>{{ $payment->subscription?->ends_at?->format('d/m/Y H:i') ?? 'Belum tersedia' }}</dd></div>

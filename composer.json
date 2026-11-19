@@ -42,7 +42,13 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve\" \"php artisan analyses:work\" \"npm run dev\" --names=server,queue,vite --kill-others"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74,#86efac\" \"php artisan serve\" \"php artisan analyses:work\" \"npm run dev\" \"php artisan schedule:work\" --names=server,queue,vite,scheduler --kill-others"
+        ],
+        "start:local": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php -r \"if (!is_file('public/build/manifest.json')) { fwrite(STDERR, 'Jalankan npm.cmd run build terlebih dahulu.'.PHP_EOL); exit(1); }\"",
+            "@putenv AICHECK_USE_BUILT_ASSETS=1",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#86efac\" \"php artisan serve --no-reload\" \"php artisan analyses:work\" \"php artisan schedule:work\" --names=server,queue,scheduler --kill-others"
         ],
         "test": [
             "@php artisan config:clear --ansi",

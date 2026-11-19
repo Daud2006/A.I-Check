@@ -31,6 +31,18 @@ class LocalAiDetector
         'haywoodsloan' => 'apache-2.0',
     ];
 
+    public function isReady(): bool
+    {
+        try {
+            $configuration = $this->detectorConfiguration();
+            $configuration['connect_timeout'] = min(2, $configuration['connect_timeout']);
+
+            return $this->healthIsReady($this->getLocalResponse($configuration, '/health', 2, 'health'));
+        } catch (ImageClassificationException) {
+            return false;
+        }
+    }
+
     public function classify(ImageAnalysis $analysis): array
     {
         try {
@@ -62,12 +74,7 @@ class LocalAiDetector
             'health',
         );
 
-        if (
-            ! $health->successful()
-            || ! is_array($healthPayload = $health->json())
-            || ($healthPayload['status'] ?? null) !== 'ok'
-            || ($healthPayload['models_loaded'] ?? null) !== true
-        ) {
+        if (! $this->healthIsReady($health)) {
             throw new ImageClassificationException(
                 'API deteksi AI lokal belum siap memproses gambar.',
                 503,
@@ -136,6 +143,15 @@ class LocalAiDetector
         }
 
         return $this->normalizePrediction($response->json(), $info->json(), 'detect_response');
+    }
+
+    private function healthIsReady(Response $health): bool
+    {
+        $payload = $health->json();
+
+        return $health->successful() && is_array($payload)
+            && ($payload['status'] ?? null) === 'ok'
+            && ($payload['models_loaded'] ?? null) === true;
     }
 
     private function getLocalResponse(

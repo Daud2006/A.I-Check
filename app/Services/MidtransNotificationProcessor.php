@@ -65,9 +65,21 @@ class MidtransNotificationProcessor
                 return;
             }
 
+            $environment = config('midtrans.is_production') ? 'production' : 'sandbox';
+            if ($payment->environment !== null && $payment->environment !== $environment) {
+                throw new InvalidArgumentException('Midtrans payment environment does not match.');
+            }
+
+            $payment->verified_at = now();
+            $method = $notification['payment_type'] ?? null;
+            if (in_array($method, ['dana', 'qris'], true)) {
+                $payment->payment_method = $method;
+            }
+
             if ($status === 'pending') {
                 if ($payment->status === 'pending') {
                     $this->saveTransactionId($payment, $providerTransactionId);
+                    $payment->save();
                 }
 
                 return;
@@ -130,43 +142,17 @@ class MidtransNotificationProcessor
 
         $plan = Plan::query()->find($subscription->plan_id);
 
-        if (! $plan instanceof Plan || ! in_array($plan->billing_interval, ['monthly', 'yearly'], true)) {
+        $interval = $subscription->plan_terms['billing_interval'] ?? $plan?->billing_interval;
+        if (! $plan instanceof Plan || ! in_array($interval, ['monthly', 'yearly'], true)) {
             throw new RuntimeException('The purchased plan does not have a supported billing interval.');
         }
 
-        $now = CarbonImmutable::now();
-        $existingSubscriptions = Subscription::query()
-            ->where('user_id', $user->getKey())
-            ->where('status', 'active')
-            ->whereNull('cancelled_at')
-            ->where(function ($query) use ($now): void {
-                $query->whereNull('ends_at')->orWhere('ends_at', '>', $now);
-            })
-            ->whereHas('plan', function ($query): void {
-                $query->where('is_active', true)->where('price', '>', 0);
-            })
-            ->whereHas('payments', function ($query): void {
-                $query->where('status', 'paid');
-            })
-            ->lockForUpdate()
-            ->get(['id', 'ends_at']);
-
-        if ($existingSubscriptions->contains(fn (Subscription $item): bool => $item->ends_at === null)) {
+        $startsAt = Subscription::nextStartFor($user, CarbonImmutable::now());
+        if ($startsAt === null) {
             throw new RuntimeException('An existing paid subscription has no end date.');
         }
 
-        $startsAt = $existingSubscriptions
-            ->pluck('ends_at')
-            ->filter()
-            ->map(fn ($endDate): CarbonImmutable => CarbonImmutable::parse($endDate))
-            ->reduce(
-                fn (CarbonImmutable $latest, CarbonImmutable $endDate): CarbonImmutable => $endDate->greaterThan($latest)
-                    ? $endDate
-                    : $latest,
-                $now
-            );
-
-        $endsAt = match ($plan->billing_interval) {
+        $endsAt = match ($interval) {
             'monthly' => $startsAt->addMonthNoOverflow(),
             'yearly' => $startsAt->addYearNoOverflow(),
             default => throw new RuntimeException('The purchased plan does not have a supported billing interval.'),
@@ -175,6 +161,7 @@ class MidtransNotificationProcessor
         $subscription->starts_at = $startsAt;
         $subscription->ends_at = $endsAt;
         $subscription->cancelled_at = null;
+        $subscription->plan_terms ??= $plan->subscriptionTerms();
         $subscription->status = 'active';
         $subscription->save();
     }

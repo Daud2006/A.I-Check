@@ -20,7 +20,7 @@
         <div class="admin-user-profile-heading">
             <span class="admin-user-profile-avatar" aria-hidden="true">@include('icon', ['name' => 'layers'])</span>
             <div>
-                <span class="eyebrow">Paket berlangganan</span>
+
                 <h1 class="admin-title" id="admin-plan-detail-title">{{ $plan->name }}</h1>
                 <p class="admin-description">{{ $plan->slug }}</p>
             </div>

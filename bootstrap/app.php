@@ -12,6 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('auth'));
+        $middleware->web(append: [\App\Http\Middleware\RejectDisabledAccount::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

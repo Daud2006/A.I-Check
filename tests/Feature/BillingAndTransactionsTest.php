@@ -27,10 +27,80 @@ class BillingAndTransactionsTest extends TestCase
 
         $this->get(route('plans.index'))
             ->assertOk()
+            ->assertSee('5 analisis</strong> dalam 7 hari berjalan', false)
+            ->assertSee('Prioritas di antrean analisis')
+            ->assertSee('Antrean reguler')
             ->assertSee('Premium Bulanan')
             ->assertSee('IDR 29.000,00')
             ->assertDontSee('Disabled Plan')
             ->assertDontSee('Unsupported Currency');
+    }
+
+    public function test_plans_show_current_entitlement_and_link_to_transaction_history(): void
+    {
+        config(['midtrans.server_key' => self::SERVER_KEY]);
+        $user = User::factory()->create();
+        [$payment, $subscription] = $this->createPendingPayment($user);
+        $plan = $subscription->plan;
+        $plan->update(['analysis_limit' => 30]);
+        $usage = $user->usageRecords()->create(['usage_type' => 'analysis', 'quantity' => 2]);
+        $this->postJson(route('webhooks.midtrans'), $this->notification($payment, 'settlement'))->assertOk();
+        $endsAt = $subscription->fresh()->ends_at;
+
+        $this->actingAs($user)->get(route('plans.index'))
+            ->assertOk()
+            ->assertSee('Paket saat ini <strong>'.$plan->name.'</strong>', false)
+            ->assertSeeText('28 dari 30 analisis')
+            ->assertSee($endsAt->toIso8601String())
+            ->assertSee(route('transactions.index'))
+            ->assertSee(route('checkout.show', $plan));
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Paket saat ini')
+            ->assertSee($plan->name)
+            ->assertSee('Simpan nama')
+            ->assertSeeText('28 dari 30 analisis')
+            ->assertSee('Pembaruan kuota berikutnya')
+            ->assertSee($usage->created_at->copy()->addDays(7)->toIso8601String())
+            ->assertSee($endsAt->toIso8601String());
+    }
+
+    public function test_checkout_summary_preserves_the_plan_through_login_and_requires_no_payment_record(): void
+    {
+        config(['midtrans.server_key' => self::SERVER_KEY]);
+        $plan = $this->createPlan();
+        $summary = route('checkout.show', $plan);
+
+        $this->get($summary)->assertRedirect(route('auth'))->assertSessionHas('url.intended', $summary);
+
+        $this->actingAs(User::factory()->create())->get($summary)
+            ->assertOk()
+            ->assertSee($plan->name)
+            ->assertSee('DANA')
+            ->assertSee('QRIS')
+            ->assertSee(route('checkout.store', $plan));
+
+        $this->assertDatabaseCount('payments', 0);
+    }
+
+    public function test_checkout_passes_only_the_selected_method_to_midtrans(): void
+    {
+        config(['midtrans.server_key' => self::SERVER_KEY, 'midtrans.is_production' => false]);
+        Http::fake([
+            'https://app.sandbox.midtrans.com/snap/v1/transactions' => Http::response([
+                'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/test',
+            ], 201),
+        ]);
+        $plan = $this->createPlan();
+        $checkout = route('checkout.store', $plan);
+        $this->actingAs(User::factory()->create());
+
+        $this->post($checkout, ['payment_method' => 'unknown'])->assertSessionHasErrors('payment_method');
+        Http::assertNothingSent();
+
+        $this->post($checkout, ['payment_method' => 'other_qris'])->assertRedirect();
+        Http::assertSent(fn (ClientRequest $request): bool => $request['enabled_payments'] === ['other_qris']);
     }
 
     public function test_checkout_uses_database_price_and_creates_pending_records_until_webhook(): void
@@ -67,9 +137,19 @@ class BillingAndTransactionsTest extends TestCase
             return $request->url() === 'https://app.sandbox.midtrans.com/snap/v1/transactions'
                 && $request->hasHeader('Authorization')
                 && $payload['transaction_details']['gross_amount'] === 29000.0
+                && $payload['enabled_payments'] === ['dana', 'other_qris']
+                && $payload['dana']['callback_url'] === route('transactions.index')
                 && $payload['item_details'][0]['price'] === 29000.0
                 && $payload['transaction_details']['order_id'] === 'AIC-PAY-1';
         });
+
+        $this->post(route('checkout.store', $plan->id))
+            ->assertRedirect(route('transactions.show', $payment->id));
+        $this->get(route('transactions.show', $payment->id))
+            ->assertSee('Lanjutkan pembayaran');
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('subscriptions', 1);
+        Http::assertSentCount(1);
     }
 
     public function test_invalid_inactive_or_unsupported_plans_cannot_be_checked_out(): void

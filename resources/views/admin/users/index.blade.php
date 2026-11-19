@@ -3,18 +3,18 @@
 @section('title', 'A.I Check | Manajemen Pengguna')
 
 @section('content')
-    <section class="admin-page" aria-labelledby="admin-users-title">
+    <section class="admin-page admin-page-wide" aria-labelledby="admin-users-title">
         <div class="admin-page-heading admin-users-heading">
             <div>
-                <span class="eyebrow">@include('icon', ['name' => 'user', 'class' => 'icon-sm'])Administrasi</span>
+
                 <h1 class="admin-title" id="admin-users-title">Manajemen Pengguna</h1>
-                <p class="admin-description">Cari dan tinjau akun beserta informasi langganan yang tersedia.</p>
-            </div>
-            <div class="admin-users-total">
-                <strong>{{ number_format($users->total()) }}</strong>
-                <span>akun ditemukan</span>
+
             </div>
         </div>
+
+        @if (session('status'))
+            <p class="admin-status-note" role="status">{{ session('status') }}</p>
+        @endif
 
         <section class="admin-data-panel admin-users-filter-panel" aria-label="Pencarian dan filter pengguna">
             <form method="GET" action="{{ route('admin.users.index') }}" class="admin-user-filters">
@@ -40,7 +40,7 @@
                 </label>
 
                 <label class="admin-filter-field">
-                    <span class="admin-filter-label">Status subscription</span>
+                    <span class="admin-filter-label">Status langganan</span>
                     <select name="subscription" class="admin-filter-control">
                         <option value="">Semua status</option>
                         <option value="none" @selected($filters['subscription'] === 'none')>Tanpa subscription</option>
@@ -70,14 +70,22 @@
                     </select>
                 </label>
 
+                <label class="admin-filter-field">
+                    <span class="admin-filter-label">Akses saat ini</span>
+                    <select name="account" class="admin-filter-control">
+                        <option value="">Semua akun</option>
+                        <option value="free" @selected($filters['account'] === 'free')>Free</option>
+                        <option value="premium" @selected($filters['account'] === 'premium')>Premium</option>
+                    </select>
+                </label>
+
                 <div class="admin-filter-actions">
+                    <a href="{{ route('admin.users.create') }}" class="btn btn-secondary">Buat akun</a>
                     <button type="submit" class="btn btn-primary">
                         @include('icon', ['name' => 'search', 'class' => 'icon-sm'])
                         Terapkan
                     </button>
-                    @if (collect($filters)->contains(fn (string $value): bool => $value !== ''))
-                        <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Reset filter</a>
-                    @endif
+                        <a href="{{ route('admin.users.index') }}" class="btn btn-admin-reset">Reset filter</a>
                 </div>
             </form>
         </section>
@@ -94,7 +102,7 @@
                                 <th scope="col">Tanggal registrasi</th>
                                 <th scope="col">Status subscription</th>
                                 <th scope="col">Paket</th>
-                                <th scope="col"><span class="admin-visually-hidden">Aksi</span></th>
+                                <th scope="col" class="admin-sticky-actions"><span class="admin-visually-hidden">Aksi</span></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -105,6 +113,9 @@
                                     <td>
                                         <span class="admin-table-primary">{{ $user->name }}</span>
                                         <span class="admin-table-secondary">{{ $user->email }}</span>
+                                        @if ($user->disabled_at)
+                                            <span class="admin-table-secondary">Akun nonaktif</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="admin-badge {{ $user->role === \App\Models\User::ROLE_ADMIN ? 'is-admin' : '' }}">
@@ -127,16 +138,27 @@
                                             <span class="admin-table-secondary">Tidak ada</span>
                                         @endif
                                     </td>
-                                    <td>{{ $subscription?->plan?->name ?? '—' }}</td>
-                                    <td>
-                                        <a
-                                            href="{{ route('admin.users.show', $user->id) }}"
-                                            class="admin-user-detail-link"
-                                            aria-label="Lihat detail {{ $user->name }}"
-                                        >
-                                            Lihat detail
-                                            @include('icon', ['name' => 'arrow', 'class' => 'icon-sm'])
-                                        </a>
+                                    <td>{{ $subscription?->planName() ?? '—' }}</td>
+                                    <td class="admin-sticky-actions">
+                                        <div class="admin-row-actions">
+                                            @if ($user->role === \App\Models\User::ROLE_USER && ! $user->disabled_at)
+                                                <form method="POST" action="{{ route('admin.users.destroy', $user->id) }}" data-confirm-admin-action="Hapus akun {{ $user->name }}? Akun yang memiliki riwayat akan dinonaktifkan.">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="admin-row-delete" title="Hapus akun {{ $user->name }}" aria-label="Hapus akun {{ $user->name }}">
+                                                        @include('icon', ['name' => 'trash', 'class' => 'icon-sm'])
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <a
+                                                href="{{ route('admin.users.show', $user->id) }}"
+                                                class="admin-user-detail-link"
+                                                aria-label="Lihat detail {{ $user->name }}"
+                                            >
+                                                Lihat detail
+                                                @include('icon', ['name' => 'arrow', 'class' => 'icon-sm'])
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

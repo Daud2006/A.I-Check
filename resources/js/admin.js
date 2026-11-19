@@ -5,6 +5,12 @@ const sidebarBackdrop = document.querySelector('[data-admin-sidebar-close]');
 const mobileSidebar = window.matchMedia('(max-width: 900px)');
 const tabletSidebar = window.matchMedia('(min-width: 901px) and (max-width: 1100px)');
 
+document.querySelectorAll('form[data-confirm-admin-action]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+        if (!window.confirm(form.dataset.confirmAdminAction)) event.preventDefault();
+    });
+});
+
 if (adminShell && sidebarToggle && sidebar && sidebarBackdrop) {
     const syncExpandedState = () => {
         const expanded = mobileSidebar.matches

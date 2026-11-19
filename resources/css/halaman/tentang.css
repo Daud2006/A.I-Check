@@ -69,6 +69,41 @@
     font-size: 14px;
     line-height: 1.7;
 }
+.faq details {
+    margin-top: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+.faq summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+.faq dl {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+}
+.faq dt {
+    margin-top: 10px;
+    color: var(--slate-900);
+    font-weight: 600;
+}
+.faq dd {
+    margin: 0;
+}
+.dokumen-situs {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: clamp(20px, 5vw, 36px);
+}
+.dokumen-situs h1 {
+    margin: 0;
+    font-size: clamp(1.75rem, 5vw, 2.25rem);
+}
+.dokumen-situs section {
+    margin-top: 24px;
+}
 .about-note code {
     border-radius: 6px;
     background: #f1f5f9;

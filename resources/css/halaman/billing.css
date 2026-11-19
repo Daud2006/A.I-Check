@@ -8,6 +8,84 @@
     margin: 0 auto;
 }
 
+.billing-checkout-page {
+    display: grid;
+    align-items: center;
+}
+
+.billing-checkout {
+    max-width: 500px;
+}
+
+.billing-checkout-back {
+    display: inline-flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.billing-checkout h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 4vw, 1.75rem);
+    letter-spacing: -0.025em;
+}
+
+.billing-checkout .billing-plan-benefits {
+    margin-bottom: 0;
+}
+
+.billing-checkout-form {
+    display: grid;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.billing-checkout-form fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.billing-checkout-form legend {
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.billing-payment-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.billing-payment-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+.billing-payment-options label:has(input:checked) {
+    border-color: var(--blue-700);
+    background: var(--blue-100);
+}
+
+.billing-payment-instruction {
+    display: none;
+    margin: 12px 0 0;
+    color: var(--slate-700);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.billing-checkout-form fieldset:has([value="other_qris"]:checked) [data-method="other_qris"],
+.billing-checkout-form fieldset:has([value="dana"]:checked) [data-method="dana"] {
+    display: block;
+}
+
 .billing-heading {
     margin: 0 0 24px;
 }
@@ -30,6 +108,18 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
     gap: 18px;
 }
+.billing-account-summary {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.billing-account-summary > p,
+.billing-account-summary .profile-account-list {
+    margin: 0;
+}
+.billing-account-summary > a {
+    justify-self: start;
+}
 
 .billing-plan-card,
 .billing-panel {
@@ -44,6 +134,24 @@
     display: flex;
     min-width: 0;
     flex-direction: column;
+}
+
+.billing-plan-card-premium {
+    border-color: var(--blue-200, #bfdbfe);
+}
+
+.billing-plan-benefits {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 24px;
+    padding-inline-start: 20px;
+    color: var(--slate-700);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.billing-plan-benefits li::marker {
+    color: var(--blue-700);
 }
 
 .billing-plan-card h2 {

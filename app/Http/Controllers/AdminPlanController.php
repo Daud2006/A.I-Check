@@ -9,6 +9,8 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -56,6 +58,7 @@ class AdminPlanController extends Controller
         $this->ensureAdmin();
         $data = $this->validatedPlan($request);
         $plan = Plan::query()->create($data);
+        Log::notice('Admin created plan.', ['admin_id' => $request->user()->id, 'plan_id' => $plan->id]);
 
         return redirect()
             ->route('admin.plans.show', $plan)
@@ -88,10 +91,12 @@ class AdminPlanController extends Controller
     {
         $this->ensureAdmin();
         $data = $this->validatedPlan($request, $plan);
-        $this->assertSafePlanChange($plan, $data);
-
-        $plan->fill($data);
-        $plan->save();
+        DB::transaction(function () use ($plan, $data): void {
+            $lockedPlan = Plan::query()->lockForUpdate()->findOrFail($plan->id);
+            $this->assertSafePlanChange($lockedPlan, $data);
+            $lockedPlan->update($data);
+        }, 3);
+        Log::notice('Admin updated plan.', ['admin_id' => $request->user()->id, 'plan_id' => $plan->id]);
 
         return redirect()
             ->route('admin.plans.show', $plan)
@@ -104,17 +109,19 @@ class AdminPlanController extends Controller
         $data = $request->validate([
             'is_active' => ['required', 'boolean'],
         ]);
-        $planData = [
-            'is_active' => (bool) $data['is_active'],
-            'price' => $plan->price,
-            'billing_interval' => $plan->billing_interval,
-        ];
-        $this->assertSafePlanChange($plan, $planData);
+        $active = (bool) $data['is_active'];
+        DB::transaction(function () use ($plan, $active): void {
+            $lockedPlan = Plan::query()->lockForUpdate()->findOrFail($plan->id);
+            $this->assertSafePlanChange($lockedPlan, [
+                'is_active' => $active,
+                'price' => $lockedPlan->price,
+                'billing_interval' => $lockedPlan->billing_interval,
+            ]);
+            $lockedPlan->update(['is_active' => $active]);
+        }, 3);
+        Log::notice('Admin changed plan availability.', ['admin_id' => $request->user()->id, 'plan_id' => $plan->id, 'is_active' => $active]);
 
-        $plan->is_active = $planData['is_active'];
-        $plan->save();
-
-        return back()->with('status', $plan->is_active
+        return back()->with('status', $active
             ? 'Paket berhasil diaktifkan.'
             : 'Paket berhasil dinonaktifkan.');
     }
@@ -164,7 +171,8 @@ class AdminPlanController extends Controller
         }
 
         $hasEntitledUsers = Subscription::query()
-            ->currentlyEntitled(now())
+            ->eligible()
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
             ->where('plan_id', $plan->getKey())
             ->exists();
         $hasPendingPayments = Payment::query()
@@ -174,7 +182,7 @@ class AdminPlanController extends Controller
 
         if ($stoppingEntitlement && $hasEntitledUsers) {
             throw ValidationException::withMessages([
-                'is_active' => 'Paket tidak dapat dinonaktifkan atau dibuat gratis selama masih ada subscription berbayar yang aktif.',
+                'is_active' => 'Paket tidak dapat dinonaktifkan atau dibuat gratis selama masih ada langganan yang berlaku atau terjadwal.',
             ]);
         }
 

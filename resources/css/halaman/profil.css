@@ -83,6 +83,23 @@
     gap: 16px;
     margin: 18px 0 0;
 }
+.profile-subscription-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+    font-size: 14px;
+}
+.profile-email {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+.profile-email dd {
+    margin: 4px 0 0;
+    color: var(--slate-900);
+    overflow-wrap: anywhere;
+}
 .profile-account-row {
     display: grid;
     grid-template-columns: minmax(110px, 0.35fr) minmax(0, 1fr);
@@ -138,5 +155,5 @@
 .profile-form {
     display: grid;
     gap: 18px;
-    margin-top: 32px;
+    margin-top: 18px;
 }

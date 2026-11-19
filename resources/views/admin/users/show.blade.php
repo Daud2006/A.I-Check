@@ -3,23 +3,34 @@
 @section('title', 'A.I Check | Detail Pengguna')
 
 @section('content')
+    @if (session('status'))
+        <p class="profile-notice" role="status">{{ session('status') }}</p>
+    @endif
     <section class="admin-page" aria-labelledby="admin-user-detail-title">
         <div class="admin-user-detail-top">
             <a href="{{ route('admin.users.index') }}" class="admin-back-link">
                 @include('icon', ['name' => 'arrow', 'class' => 'icon-sm'])
                 Kembali ke pengguna
             </a>
-            <span class="admin-badge {{ $user->role === \App\Models\User::ROLE_ADMIN ? 'is-admin' : '' }}">
-                {{ $user->role === \App\Models\User::ROLE_ADMIN ? 'Admin' : 'Pengguna' }}
-            </span>
+            @if ($user->role === \App\Models\User::ROLE_USER)
+                <div class="admin-filter-actions">
+                    <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-secondary">Edit akun</a>
+                    @if ($user->disabled_at)
+                        <form method="POST" action="{{ route('admin.users.enable', $user->id) }}">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn btn-primary">Aktifkan kembali</button>
+                        </form>
+                    @endif
+                </div>
+            @endif
         </div>
 
         <div class="admin-user-profile-heading">
             <span class="admin-user-profile-avatar" aria-hidden="true">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
             <div>
-                <span class="eyebrow">@include('icon', ['name' => 'user', 'class' => 'icon-sm'])Detail akun</span>
+
                 <h1 class="admin-title" id="admin-user-detail-title">{{ $user->name }}</h1>
-                <p class="admin-description">{{ $user->email }}</p>
             </div>
         </div>
 
@@ -28,7 +39,7 @@
                 <div class="admin-section-heading">
                     <div>
                         <h2 class="admin-section-title" id="admin-user-account-title">Informasi akun</h2>
-                        <p class="admin-section-description">Data profil yang tersedia.</p>
+
                     </div>
                 </div>
                 <dl class="admin-user-info-list">
@@ -59,7 +70,7 @@
                 <div class="admin-section-heading">
                     <div>
                         <h2 class="admin-section-title" id="admin-user-analysis-summary-title">Ringkasan analisis</h2>
-                        <p class="admin-section-description">Jumlah seluruh record dan lima analisis terbaru.</p>
+
                     </div>
                 </div>
                 <div class="admin-user-analysis-total">
@@ -72,12 +83,11 @@
         <section class="admin-data-panel admin-user-subscriptions-panel" aria-labelledby="admin-user-subscriptions-title">
             <div class="admin-section-heading">
                 <div>
-                    <h2 class="admin-section-title" id="admin-user-subscriptions-title">Subscription</h2>
-                    <p class="admin-section-description">Hingga 10 record subscription terbaru.</p>
+                    <h2 class="admin-section-title" id="admin-user-subscriptions-title">Langganan</h2>
+
                 </div>
             </div>
 
-            @if ($subscriptions->isNotEmpty())
                 <div class="admin-users-table-scroll">
                     <table class="admin-table">
                         <thead>
@@ -90,9 +100,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($subscriptions as $subscription)
+                            @forelse ($subscriptions as $subscription)
                                 <tr>
-                                    <td>{{ $subscription->plan?->name ?? 'Paket tidak tersedia' }}</td>
+                                    <td>{{ $subscription->planName() ?? 'Paket tidak tersedia' }}</td>
                                     <td>
                                         <span class="admin-badge {{ $subscription->status === 'active' ? 'is-premium' : '' }}">
                                             {{ match ($subscription->status) {
@@ -108,23 +118,19 @@
                                     <td>{{ $subscription->ends_at?->format('d/m/Y H:i') ?? 'Tanpa tanggal berakhir' }}</td>
                                     <td>{{ $subscription->cancelled_at?->format('d/m/Y H:i') ?? '—' }}</td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr><td colspan="5">Pengguna ini belum memiliki data subscription.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
-            @else
-                <div class="admin-empty-state">
-                    <span class="admin-empty-icon">@include('icon', ['name' => 'refresh'])</span>
-                    <p>Pengguna ini belum memiliki data subscription.</p>
-                </div>
-            @endif
         </section>
 
         <section class="admin-data-panel admin-user-analyses-panel" aria-labelledby="admin-user-analyses-title">
             <div class="admin-section-heading">
                 <div>
                     <h2 class="admin-section-title" id="admin-user-analyses-title">Analisis terbaru</h2>
-                    <p class="admin-section-description">Informasi metadata dan hasil yang aman; file dan gambar tidak ditampilkan.</p>
+
                 </div>
             </div>
 

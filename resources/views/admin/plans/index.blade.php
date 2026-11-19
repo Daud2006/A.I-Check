@@ -3,14 +3,13 @@
 @section('title', 'A.I Check | Pengaturan Paket')
 
 @section('content')
-    <section class="admin-page" aria-labelledby="admin-plans-title">
+    <section class="admin-page admin-page-wide" aria-labelledby="admin-plans-title">
         <div class="admin-page-heading admin-users-heading">
             <div>
-                <span class="eyebrow">Administrasi</span>
+
                 <h1 class="admin-title" id="admin-plans-title">Paket dan Kuota</h1>
-                <p class="admin-description">Kelola paket tanpa menghapus riwayat subscription dan pembayaran.</p>
+
             </div>
-            <a href="{{ route('admin.plans.create') }}" class="btn btn-primary">Tambah paket</a>
         </div>
 
         @if (session('status'))
@@ -41,8 +40,9 @@
                     </select>
                 </label>
                 <div class="admin-filter-actions">
-                    <button type="submit" class="btn btn-primary">Terapkan</button>
-                    <a href="{{ route('admin.plans.index') }}" class="btn btn-secondary">Reset</a>
+                    <a href="{{ route('admin.plans.create') }}" class="btn btn-secondary">Tambah paket</a>
+                    <button type="submit" class="btn btn-primary">@include('icon', ['name' => 'search', 'class' => 'icon-sm'])Terapkan</button>
+                    <a href="{{ route('admin.plans.index') }}" class="btn btn-admin-reset">Reset</a>
                 </div>
             </form>
         </section>
@@ -57,7 +57,7 @@
                                 <th>Harga</th>
                                 <th>Periode</th>
                                 <th>Batas analisis</th>
-                                <th>Subscription</th>
+                                <th>Langganan</th>
                                 <th>Status</th>
                                 <th><span class="admin-visually-hidden">Aksi</span></th>
                             </tr>
@@ -71,7 +71,7 @@
                                     </td>
                                     <td>{{ $plan->currency }} {{ number_format((float) $plan->price, 2, ',', '.') }}</td>
                                     <td>{{ match ($plan->billing_interval) {'monthly' => 'Bulanan', 'yearly' => 'Tahunan', 'none' => 'Tidak berulang', default => $plan->billing_interval} }}</td>
-                                    <td>{{ $plan->analysis_limit === null ? 'Tidak diatur' : number_format($plan->analysis_limit) }}</td>
+                                    <td>{{ $plan->analysis_limit === null ? 'Tidak diatur' : number_format($plan->analysis_limit, 0, ',', '.').' / 7 hari' }}</td>
                                     <td>{{ number_format($plan->subscriptions_count) }}</td>
                                     <td><span class="admin-badge {{ $plan->is_active ? 'is-premium' : '' }}">{{ $plan->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
                                     <td><a href="{{ route('admin.plans.show', $plan) }}" class="admin-user-detail-link">Detail</a></td>

@@ -33,7 +33,7 @@
         <div class="admin-user-profile-heading">
             <span class="admin-user-profile-avatar" aria-hidden="true">@include('icon', ['name' => 'image'])</span>
             <div>
-                <span class="eyebrow">@include('icon', ['name' => 'image', 'class' => 'icon-sm'])Detail pemeriksaan</span>
+
                 <h1 class="admin-title" id="admin-analysis-detail-title">Analisis #{{ $analysis->id }}</h1>
                 <p class="admin-description">
                     {{ $analysis->created_at?->format('d/m/Y H:i:s') ?? 'Waktu tidak tersedia' }}

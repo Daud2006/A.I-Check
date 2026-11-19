@@ -23,6 +23,7 @@ class MidtransWebhookController extends Controller
             'transaction_status' => ['required', 'string', 'max:32'],
             'transaction_id' => ['nullable', 'string', 'max:100'],
             'fraud_status' => ['nullable', 'string', 'max:32'],
+            'payment_type' => ['nullable', 'string', 'max:32'],
         ]);
 
         if ($validator->fails()) {

@@ -1,5 +1,10 @@
 # A.I-Check
 
+Untuk pemakaian harian di Windows, ikuti `baca.txt`. Perintah
+`composer run start:local` menjalankan website, worker, dan scheduler
+dengan aset dari `public/build`. Setelah mengubah CSS atau JavaScript,
+jalankan `npm.cmd run build` untuk memperbarui aset.
+
 ## Menyalakan detector lokal (Windows / Laragon)
 
 Detector ada di `aidetect-engine` dan memproses gambar pada mesin lokal. Pada
@@ -212,6 +217,64 @@ rentang `p_ai` dari respons.
   keamanan deployment atau penghapusan backup/log di luar perilaku aplikasi.
 - Ketersediaan dan kapasitas layanan deteksi berada di luar proses Laravel;
   layanan yang sibuk atau timeout dapat menyebabkan analisis gagal.
+
+## Uji langganan dengan Midtrans Sandbox
+
+1. Masuk sebagai admin dan buka **Admin → Paket**. Buat dan aktifkan paket
+   Premium berbayar dalam IDR dengan periode bulanan atau tahunan. Tentukan
+   harga dan kuota analisis sesuai kebijakan proyek.
+2. Atur `MIDTRANS_SERVER_KEY` dengan Server Key Sandbox pada konfigurasi lokal
+   dan gunakan `MIDTRANS_IS_PRODUCTION=false`. Checkout ini memakai halaman
+   pembayaran Midtrans Snap melalui redirect dengan pilihan DANA dan QRIS.
+   Pastikan kanal DANA aktif pada akun merchant agar dapat ditampilkan. QRIS
+   generik memerlukan GoPay QRIS atau ShopeePay QRIS aktif pada akun Midtrans.
+3. Di dashboard Sandbox Midtrans, isi **Payment Notification URL** dengan URL
+   HTTPS lingkungan uji yang diakhiri `/webhooks/midtrans`. Midtrans harus
+   dapat menjangkau endpoint ini dari internet. Alamat localhost Laragon
+   dapat membuka katalog dan memulai checkout, tetapi tidak menerima webhook
+   langsung dari Midtrans.
+4. Masuk dengan akun pengguna uji, buka **Langganan**, dan pilih paket. Setelah
+   pembayaran uji, periksa **Riwayat transaksi** dan **Profil**. Transaksi
+   menjadi berhasil dan paket mulai berlaku sesuai masa langganan setelah
+   aplikasi menerima notifikasi yang valid.
+
+[Panduan Snap](https://docs.midtrans.com/docs/snap-snap-integration-guide) ·
+[Panduan DANA](https://docs.midtrans.com/reference/dana) ·
+[Panduan QRIS](https://docs.midtrans.com/reference/other-qris) ·
+[Panduan webhook](https://docs.midtrans.com/docs/https-notification-webhooks)
+
+## Uji OTP lokal dengan Mailpit
+
+Jalankan Mailpit di PowerShell terpisah jika layanan belum aktif.
+
+```powershell
+& 'C:\laragon\bin\mailpit\1.22.3\mailpit.exe' --smtp '127.0.0.1:1025' --listen '127.0.0.1:8025'
+```
+
+Gunakan pengaturan berikut di `.env` lokal, lalu mulai ulang website.
+
+```dotenv
+MAIL_MAILER=smtp
+MAIL_SCHEME=smtp
+MAIL_HOST=127.0.0.1
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_URL=null
+MAIL_FROM_ADDRESS=aicheck@example.test
+```
+
+Minta kode untuk akun uji yang terdaftar, lalu buka kotak masuk Mailpit
+di `http://127.0.0.1:8025`.
+
+## Analisis tertahan
+
+Halaman Deteksi Gambar berhenti menunggu setelah sekitar dua menit. Status
+analisis masih tersedia di Riwayat. Scheduler menandai analisis yang tetap
+menunggu atau memproses selama 10 menit sebagai gagal dan mengembalikan kuota.
+`composer run dev` menyalakan scheduler. Jika menjalankan layanan terpisah,
+gunakan `php artisan schedule:work` atau jalankan `php artisan analyses:recover`
+untuk memeriksa antrean secara manual.
 
 ## Tes dan pemeriksaan
 

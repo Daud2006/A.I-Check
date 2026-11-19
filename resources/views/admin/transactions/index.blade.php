@@ -3,16 +3,12 @@
 @section('title', 'A.I Check | Manajemen Transaksi')
 
 @section('content')
-    <section class="admin-page" aria-labelledby="admin-transactions-title">
+    <section class="admin-page admin-page-wide" aria-labelledby="admin-transactions-title">
         <div class="admin-page-heading admin-users-heading">
             <div>
-                <span class="eyebrow">@include('icon', ['name' => 'check', 'class' => 'icon-sm'])Administrasi</span>
+
                 <h1 class="admin-title" id="admin-transactions-title">Manajemen Transaksi</h1>
-                <p class="admin-description">Pantau pembayaran dan subscription yang terkait.</p>
-            </div>
-            <div class="admin-users-total">
-                <strong>{{ number_format($payments->total()) }}</strong>
-                <span>transaksi ditemukan</span>
+
             </div>
         </div>
 
@@ -63,7 +59,7 @@
                         Terapkan
                     </button>
                     @if (collect($filters)->contains(fn (string $value): bool => $value !== ''))
-                        <a href="{{ route('admin.transactions.index') }}" class="btn btn-secondary">Reset filter</a>
+                        <a href="{{ route('admin.transactions.index') }}" class="btn btn-admin-reset">Reset filter</a>
                     @endif
                 </div>
             </form>
@@ -78,7 +74,7 @@
                                 <th>ID</th>
                                 <th>Pengguna</th>
                                 <th>Paket</th>
-                                <th>Jumlah</th>
+                                <th class="admin-numeric-cell">Jumlah</th>
                                 <th>Status</th>
                                 <th>Dibuat</th>
                                 <th><span class="admin-visually-hidden">Aksi</span></th>
@@ -92,8 +88,8 @@
                                         <span class="admin-table-primary">{{ $payment->user?->name ?? 'Pengguna tidak tersedia' }}</span>
                                         <span class="admin-table-secondary">{{ $payment->user?->email ?? '' }}</span>
                                     </td>
-                                    <td>{{ $payment->subscription?->plan?->name ?? 'Paket tidak tersedia' }}</td>
-                                    <td>{{ $payment->currency }} {{ number_format((float) $payment->amount, 2, ',', '.') }}</td>
+                                    <td>{{ $payment->subscription?->planName() ?? 'Paket tidak tersedia' }}</td>
+                                    <td class="admin-numeric-cell">{{ $payment->currency }} {{ number_format((float) $payment->amount, 2, ',', '.') }}</td>
                                     <td>
                                         <span class="admin-badge {{ $payment->status === 'paid' ? 'is-premium' : '' }}">
                                             {{ match ($payment->status) {
@@ -104,6 +100,9 @@
                                                 default => 'Tidak diketahui',
                                             } }}
                                         </span>
+                                        @if ($payment->environment === 'sandbox')
+                                            <span class="admin-table-secondary">Sandbox</span>
+                                        @endif
                                     </td>
                                     <td>{{ $payment->created_at?->format('d/m/Y H:i') ?? '—' }}</td>
                                     <td>

@@ -141,17 +141,6 @@
     max-height: 520px;
     object-fit: contain;
 }
-.label-pratinjau {
-    position: absolute;
-    left: 16px;
-    top: 16px;
-    border-radius: 8px;
-    background: rgba(15, 23, 42, 0.7);
-    padding: 6px 12px;
-    color: #fff;
-    font-size: 12px;
-    backdrop-filter: blur(8px);
-}
 .titik-marker {
     position: absolute;
     width: 14px;
@@ -189,24 +178,10 @@
 }
 
 .panel-hasil {
-    min-height: 480px;
-    padding: 32px;
+    align-self: start;
+    padding: clamp(18px, 3vw, 28px);
     display: flex;
     flex-direction: column;
-}
-.ikon-panel {
-    width: 48px;
-    height: 48px;
-    display: grid;
-    place-items: center;
-    border-radius: 12px;
-    background: #eff6ff;
-    color: #1d4ed8;
-}
-.judul-panel {
-    margin: 20px 0 0;
-    font-size: 24px;
-    letter-spacing: -0.02em;
 }
 .deskripsi-panel {
     margin: 8px 0 0;
@@ -241,8 +216,7 @@
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 .kemajuan-analisis {
-    margin-top: auto;
-    padding-top: 32px;
+    margin-bottom: 16px;
 }
 .checker-message-success,
 .checker-message-error {
@@ -271,20 +245,17 @@
     font-size: 20px;
     letter-spacing: -0.02em;
 }
-.judul-keterangan-analisis {
-    margin: 24px 0 0;
-    font-size: 16px;
-}
 .bagian-keterangan-analisis {
     margin-top: 16px;
     border-radius: 12px;
     background: #f8fafc;
     padding: 14px 16px;
 }
-.bagian-keterangan-analisis h4 {
-    margin: 0;
+.bagian-keterangan-analisis summary {
     color: #334155;
     font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
 }
 .bagian-keterangan-analisis p {
     margin: 6px 0 0;
@@ -308,6 +279,9 @@
 }
 .tombol-unggah-baru[hidden] {
     display: none !important;
+}
+.tombol-riwayat-hasil {
+    margin-top: 16px;
 }
 .kepala-kemajuan {
     display: flex;

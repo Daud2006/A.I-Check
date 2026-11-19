@@ -65,7 +65,7 @@ class AdminReportsTest extends TestCase
             ->assertViewHas('onlineUsersCount', 1)
             ->assertSee('AI-GENERATED')
             ->assertSee('REAL')
-            ->assertSee('Export transaksi CSV');
+            ->assertSee('Ekspor CSV transaksi');
         $this->assertSame([
             ['currency' => 'IDR', 'total_amount' => '58000'],
             ['currency' => 'USD', 'total_amount' => '10'],

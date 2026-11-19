@@ -150,7 +150,7 @@ class AdminDashboardTest extends TestCase
             ->assertOk()
             ->assertViewHas('onlineUsersAvailable', false)
             ->assertViewHas('onlineUsersCount', null)
-            ->assertSee('Data session online tidak tersedia');
+            ->assertSee('Tidak tersedia');
     }
 
     private function createAnalysis(User $user, string $status, Carbon $createdAt): ImageAnalysis

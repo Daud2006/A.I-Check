@@ -7,7 +7,7 @@
     <section class="halaman-pemeriksaan" aria-labelledby="judul-pemeriksaan">
         <div class="container">
             <div class="judul-halaman-pemeriksaan">
-                <h1 class="judul-pemeriksaan" id="judul-pemeriksaan">PERIKSA GAMBAR ANDA</h1>
+                <h1 class="judul-pemeriksaan" id="judul-pemeriksaan">Deteksi Gambar</h1>
                 @if ($quota)
                     <p class="ringkasan-kuota" id="ringkasan-kuota"
                         data-limit="{{ $quota['limit'] ?? 'unlimited' }}"
@@ -15,9 +15,9 @@
                         @if ($quota['limit'] === null)
                             Kuota analisis: tanpa batas
                         @else
-                            Kuota 7 hari berjalan: {{ $quota['used'] }} dari {{ $quota['limit'] }} analisis
+                            {{ $quota['used'] }} dari {{ $quota['limit'] }} analisis terpakai dalam 7 hari berjalan
                             @if ($quota['resets_at'])
-                                <span>Penggunaan terlama berikutnya direset {{ \Illuminate\Support\Carbon::parse($quota['resets_at'])->translatedFormat('d M Y, H:i') }}.</span>
+                                <span>Kuota bertambah {{ \Illuminate\Support\Carbon::parse($quota['resets_at'])->translatedFormat('d M Y, H:i') }}.</span>
                             @endif
                         @endif
                     </p>
@@ -31,13 +31,13 @@
             <div id="kotak-upload" class="kotak-upload">
                 <div class="area-upload" id="area-drop-gambar">
                     <span class="ikon-upload">@include('icon', ['name' => 'upload', 'style' => 'width:32px;height:32px'])</span>
-                    <h2 class="judul-upload">Upload Gambar</h2>
                     <button type="button" class="btn btn-light-blue tombol-utama" id="tombol-pilih-gambar">Pilih Gambar</button>
                     <p class="catatan-upload" id="petunjuk-format-gambar">JPEG, PNG, atau WebP · Maksimal 10 MB</p>
                     <input type="file" id="input-gambar" accept="image/png,image/jpeg,image/webp"
                         aria-label="Pilih gambar untuk dianalisis" aria-describedby="petunjuk-format-gambar"
                         data-upload-url="{{ route('checker.analyses.store') }}"
                         data-status-url="{{ route('checker.analyses.show', ['analysisId' => '__ANALYSIS_ID__']) }}"
+                        data-history-url="{{ route('history') }}"
                         data-auth-url="{{ route('auth') }}" hidden>
                 </div>
             </div>
@@ -47,38 +47,30 @@
                 <div class="kartu-gambar">
                     <div class="area-pratinjau" id="area-pratinjau">
                         <img id="gambar-pratinjau" class="gambar-pratinjau" alt="Gambar yang akan dianalisis">
-                        <span class="label-pratinjau">Pratinjau gambar</span>
                         <span class="titik-marker titik-marker-satu" hidden></span>
                         <span class="titik-marker titik-marker-dua" hidden></span>
                         <span class="titik-marker titik-marker-tiga" hidden></span>
                     </div>
                     <div class="meta-gambar">
                         <div class="ringkasan-file"><p class="nama-file" id="nama-file">-</p><p class="ukuran-file" id="ukuran-file">-</p></div>
-                        <button type="button" class="icon-button tombol-hapus-gambar" id="tombol-hapus-gambar" title="Hapus gambar">@include('icon', ['name' => 'trash'])</button>
+                        <button type="button" class="btn btn-secondary tombol-ganti-gambar" id="tombol-ganti-gambar">Ganti gambar</button>
                     </div>
                 </div>
 
                 <div class="panel-hasil" id="panel-hasil">
                     <div id="area-siap-analisis">
-                        <span class="ikon-panel">@include('icon', ['name' => 'layers'])</span>
-                        <h2 class="judul-panel">Siap untuk diunggah</h2>
-                        <p class="deskripsi-panel">Gambar akan divalidasi dan disimpan di penyimpanan privat aplikasi, kemudian dianalisis menggunakan model deteksi AI lokal. Hasil analisis mencakup kategori gambar dan probabilitas AI, tetapi tetap dapat keliru.</p>
-                        <div class="daftar-analisis">
-                            <div class="item-analisis"><span class="cek-analisis">@include('icon', ['name' => 'check', 'class' => 'icon-sm'])</span>Validasi gambar di server.</div>
-                            <div class="item-analisis"><span class="cek-analisis">@include('icon', ['name' => 'check', 'class' => 'icon-sm'])</span>Penyimpanan privat.</div>
-                            <div class="item-analisis"><span class="cek-analisis">@include('icon', ['name' => 'check', 'class' => 'icon-sm'])</span>Analisis empat kategori: AI-Generated, AI-Edited, Real, dan Uncertain.</div>
-                        </div>
                         <div class="kemajuan-analisis" id="kemajuan-analisis" role="status" aria-live="polite" aria-busy="false" hidden>
                             <div class="kepala-kemajuan"><span id="status-kemajuan">Mengunggah gambar...</span><span id="nilai-kemajuan">0%</span></div>
                             <div class="lajur-progres" role="progressbar" aria-label="Kemajuan unggah" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="isi-progres" id="isi-kemajuan" style="width:0%"></div></div>
                         </div>
-                        <button type="button" class="btn btn-primary btn-full tombol-analisis" id="tombol-analisis" style="margin-top:24px">@include('icon', ['name' => 'upload'])<span id="teks-tombol-analisis">Unggah Gambar</span></button>
+                        <p id="tautan-riwayat-antrean" hidden><a class="billing-link" href="{{ route('history') }}">Buka Riwayat</a></p>
+                        <button type="button" class="btn btn-primary btn-full tombol-analisis" id="tombol-analisis">@include('icon', ['name' => 'upload'])<span id="teks-tombol-analisis">Analisis gambar</span></button>
                     </div>
 
                     <div id="hasil-analisis" role="status" aria-live="polite" hidden></div>
                     <button type="button" class="btn btn-primary btn-full tombol-unggah-baru" id="tombol-unggah-baru" hidden>
                         @include('icon', ['name' => 'upload'])
-                        Unggah Gambar Baru
+                        Analisis gambar lain
                     </button>
                 </div>
             </div>

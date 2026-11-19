@@ -3,14 +3,18 @@
 @section('title', 'A.I Check | Admin')
 
 @section('content')
-    <section class="admin-page" aria-labelledby="admin-page-title">
+    <section class="admin-page admin-page-dashboard" aria-labelledby="admin-page-title">
         <div class="admin-page-heading">
             <div>
-                <span class="eyebrow">@include('icon', ['name' => 'spark', 'class' => 'icon-sm'])Area administrator</span>
+
                 <h1 class="admin-title" id="admin-page-title">Dashboard</h1>
-                <p class="admin-description">Ringkasan penggunaan A.I-Check berdasarkan data yang tersimpan.</p>
+
             </div>
         </div>
+
+        @if (! $dashboardError && ! $detectorReady)
+            <p class="admin-status-note" role="status">AI Engine belum siap.</p>
+        @endif
 
         @if ($dashboardError)
             <div class="admin-dashboard-error" role="alert">
@@ -23,21 +27,21 @@
                     <span class="admin-stat-icon">@include('icon', ['name' => 'user'])</span>
                     <span class="admin-stat-label">Total pengguna</span>
                     <strong class="admin-stat-value">{{ number_format($userCount) }}</strong>
-                    <span class="admin-stat-note">Akun terdaftar</span>
+
                 </article>
 
                 <article class="admin-stat-card">
                     <span class="admin-stat-icon">@include('icon', ['name' => 'layers'])</span>
                     <span class="admin-stat-label">Total analisis</span>
                     <strong class="admin-stat-value">{{ number_format($analysisCount) }}</strong>
-                    <span class="admin-stat-note">Semua status proses</span>
+
                 </article>
 
                 <article class="admin-stat-card">
                     <span class="admin-stat-icon">@include('icon', ['name' => 'clock'])</span>
                     <span class="admin-stat-label">Analisis hari ini</span>
                     <strong class="admin-stat-value">{{ number_format($todayAnalysisCount) }}</strong>
-                    <span class="admin-stat-note">Berdasarkan waktu aplikasi</span>
+                    <span class="admin-stat-note">{{ number_format($todayOutcomes->get('completed', 0)) }} selesai · {{ number_format($todayOutcomes->get('failed', 0)) }} gagal</span>
                 </article>
 
                 <article class="admin-stat-card">
@@ -48,7 +52,7 @@
                         <span class="admin-stat-note">Aktif dalam 5 menit terakhir</span>
                     @else
                         <strong class="admin-stat-value admin-stat-unavailable">Tidak tersedia</strong>
-                        <span class="admin-stat-note">Data session online tidak tersedia</span>
+
                     @endif
                 </article>
 
@@ -56,43 +60,59 @@
                     <span class="admin-stat-icon">@include('icon', ['name' => 'refresh'])</span>
                     <span class="admin-stat-label">Pengguna Premium aktif</span>
                     <strong class="admin-stat-value">{{ number_format($activeSubscriptionUsersCount) }}</strong>
-                    <span class="admin-stat-note">Langganan aktif dan masih berlaku</span>
+                    <span class="admin-stat-note">{{ number_format($freeUserCount) }} pengguna Free</span>
                 </article>
 
                 <article class="admin-stat-card">
                     <span class="admin-stat-icon">@include('icon', ['name' => 'check'])</span>
                     <span class="admin-stat-label">Transaksi berhasil</span>
                     <strong class="admin-stat-value">{{ number_format($successfulPaymentCount) }}</strong>
-                    <span class="admin-stat-note">Status pembayaran paid</span>
+
                 </article>
 
                 <article class="admin-stat-card">
                     <span class="admin-stat-icon is-pending">@include('icon', ['name' => 'clock'])</span>
-                    <span class="admin-stat-label">Transaksi pending</span>
+                    <span class="admin-stat-label">Transaksi menunggu</span>
                     <strong class="admin-stat-value">{{ number_format($pendingPaymentCount) }}</strong>
-                    <span class="admin-stat-note">Tidak dihitung sebagai pendapatan</span>
+
                 </article>
 
                 <article class="admin-stat-card admin-revenue-card">
                     <span class="admin-stat-icon">@include('icon', ['name' => 'check'])</span>
-                    <span class="admin-stat-label">Pendapatan dari transaksi berhasil</span>
+                    <span class="admin-stat-label">Pendapatan sepanjang waktu</span>
                     @forelse ($paidRevenueByCurrency as $revenue)
                         <strong class="admin-revenue-value">
                             {{ $revenue['currency'] }} {{ number_format((float) $revenue['amount'], 2, ',', '.') }}
                         </strong>
                     @empty
                         <strong class="admin-stat-value">0</strong>
-                        <span class="admin-stat-note">Belum ada transaksi paid</span>
+
                     @endforelse
-                    <span class="admin-stat-note">Dipisahkan berdasarkan mata uang</span>
+
                 </article>
             </div>
+
+            <section class="admin-data-panel" aria-labelledby="judul-pendapatan-bulan">
+                <div class="admin-section-heading">
+                    <h2 class="admin-section-title" id="judul-pendapatan-bulan">Pendapatan bulan ini</h2>
+                </div>
+                <dl class="admin-user-info-list">
+                    @forelse ($monthlyRevenue as $revenue)
+                        <div>
+                            <dt>{{ match ($revenue->environment) {'production' => 'Pembayaran produksi', 'sandbox' => 'Uji Sandbox', default => 'Lingkungan belum tercatat'} }}</dt>
+                            <dd>{{ $revenue->currency }} {{ number_format((float) $revenue->total, 2, ',', '.') }}</dd>
+                        </div>
+                    @empty
+                        <div><dt>Pembayaran berhasil</dt><dd>Belum ada bulan ini</dd></div>
+                    @endforelse
+                </dl>
+            </section>
 
             <section class="admin-data-panel admin-chart-panel" aria-labelledby="admin-analysis-chart-title">
                 <div class="admin-section-heading">
                     <div>
                         <h2 class="admin-section-title" id="admin-analysis-chart-title">Aktivitas analisis</h2>
-                        <p class="admin-section-description">Jumlah analisis per hari selama 7 hari terakhir.</p>
+
                     </div>
                     <span class="admin-period-badge">7 hari</span>
                 </div>
@@ -130,7 +150,7 @@
                     <div class="admin-section-heading">
                         <div>
                             <h2 class="admin-section-title" id="admin-recent-users-title">Pengguna terbaru</h2>
-                            <p class="admin-section-description">5 akun pengguna non-admin terakhir yang terdaftar.</p>
+
                         </div>
                     </div>
 
@@ -176,7 +196,7 @@
                     <div class="admin-section-heading">
                         <div>
                             <h2 class="admin-section-title" id="admin-recent-analyses-title">Analisis terbaru</h2>
-                            <p class="admin-section-description">5 aktivitas pemeriksaan terakhir.</p>
+
                         </div>
                     </div>
 

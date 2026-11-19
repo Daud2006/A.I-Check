@@ -38,6 +38,11 @@ class Plan extends Model
         return $this->hasMany(Subscription::class);
     }
 
+    public function subscriptionTerms(): array
+    {
+        return ['name' => $this->name, 'billing_interval' => $this->billing_interval, 'analysis_limit' => $this->analysis_limit];
+    }
+
     public function setBillingIntervalAttribute(string $interval): void
     {
         if (! in_array($interval, self::BILLING_INTERVALS, true)) {
