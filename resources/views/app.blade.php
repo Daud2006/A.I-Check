@@ -43,7 +43,18 @@
                     </button>
 
                     @auth
+                    @if (auth()->user()->hasPremiumAccess())
+                    <a href="{{ route('profile') }}" class="btn btn-secondary premium-account-link"
+                        data-premium-account aria-label="Profil pengguna: {{ auth()->user()->name }}">
+                        <span class="premium-account-name" aria-hidden="true">{{ auth()->user()->name }}</span>
+                        <span class="premium-account-badge" aria-hidden="true">
+                            @include('icon', ['name' => 'spark'])
+                            <span>Premium</span>
+                        </span>
+                    </a>
+                    @else
                     <a href="{{ route('profile') }}" class="btn btn-secondary">{{ auth()->user()->name }}</a>
+                    @endif
                     <form method="POST" action="{{ route('logout') }}" data-confirm-logout>
                         @csrf
                         <button type="submit" class="btn btn-primary">Keluar</button>
@@ -72,7 +83,18 @@
                 </button>
 
                 @auth
+                @if (auth()->user()->hasPremiumAccess())
+                <a href="{{ route('profile') }}" class="btn btn-secondary btn-full premium-account-link"
+                    data-premium-account aria-label="Profil pengguna: {{ auth()->user()->name }}">
+                    <span class="premium-account-name" aria-hidden="true">{{ auth()->user()->name }}</span>
+                    <span class="premium-account-badge" aria-hidden="true">
+                        @include('icon', ['name' => 'spark'])
+                        <span>Premium</span>
+                    </span>
+                </a>
+                @else
                 <a href="{{ route('profile') }}" class="btn btn-secondary btn-full">Profil</a>
+                @endif
                 <form method="POST" action="{{ route('logout') }}" data-confirm-logout>
                     @csrf
                     <button type="submit" class="btn btn-primary btn-full">Keluar</button>
@@ -254,7 +276,7 @@
                         <li>Akses Deteksi Gambar terbatas</li>
                         <li>Maksimal 3 kali Deteksi Gambar per hari</li>
                         <li>Ukuran file maksimal 10 MB</li>
-                        <li>Tanpa biaya langganan</li>
+                        <li>Mendapatkan Badge Free</li>
                     </ul>
 
                     <button type="button" class="btn btn-secondary subscribe-plan-button" data-auth-open="register"
@@ -279,10 +301,9 @@
                     </p>
 
                     <ul class="subscribe-list">
-                        <li>Deteksi Gambar tanpa batas harian</li>
+                        <li data-premium-duration>Akses Deteksi Gambar tidak terbatas selama 1 bulan</li>
                         <li>Unggah file berukuran lebih dari 10 MB</li>
-                        <li>Akses fitur Premium tanpa kuota harian</li>
-                        <li>Pilihan langganan bulanan atau tahunan</li>
+                        <li>Mendapatkan Badge Premium</li>
                     </ul>
 
                     <button type="button" class="btn btn-primary subscribe-plan-button" id="subscribe-premium-select">

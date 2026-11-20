@@ -317,6 +317,12 @@ class AuthenticationTest extends TestCase
             ->assertOk()
             ->assertSee('Premium')
             ->assertSee('profile-account-badge is-premium', false);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('data-premium-account', false)
+            ->assertSee('premium-account-badge', false)
+            ->assertSee('aria-label="Profil pengguna: '.e($user->name).'"', false);
     }
 
     public function test_profile_displays_free_for_an_inactive_or_unpaid_subscription(): void
@@ -344,5 +350,52 @@ class AuthenticationTest extends TestCase
             ->assertSee('Free')
             ->assertSee('profile-account-badge is-free', false)
             ->assertDontSee('profile-account-badge is-premium', false);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertDontSee('data-premium-account', false)
+            ->assertSee('class="btn btn-secondary">'.e($user->name).'</a>', false)
+            ->assertSee('>Profil</a>', false);
+    }
+
+    public function test_expired_premium_subscription_does_not_show_premium_account_identity(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::query()->create([
+            'name' => 'Premium',
+            'slug' => 'premium',
+            'price' => 29000,
+            'currency' => 'IDR',
+            'billing_interval' => 'monthly',
+            'is_active' => true,
+        ]);
+        $subscription = new Subscription([
+            'plan_id' => $plan->id,
+            'starts_at' => now()->subDays(31),
+            'ends_at' => now()->subDay(),
+        ]);
+        $subscription->status = 'active';
+        $user->subscriptions()->save($subscription);
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertDontSee('data-premium-account', false)
+            ->assertSee('class="btn btn-secondary">'.e($user->name).'</a>', false);
+    }
+
+    public function test_subscription_modal_shows_the_updated_package_benefits(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Rp0')
+            ->assertSee('/ selamanya')
+            ->assertSee('Maksimal 3 kali Deteksi Gambar per hari')
+            ->assertSee('Ukuran file maksimal 10 MB')
+            ->assertSee('Mendapatkan Badge Free')
+            ->assertSee('Rp29.000')
+            ->assertSee('Akses Deteksi Gambar tidak terbatas selama 1 bulan')
+            ->assertSee('Unggah file berukuran lebih dari 10 MB')
+            ->assertSee('Mendapatkan Badge Premium');
     }
 }

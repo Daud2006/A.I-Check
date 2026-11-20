@@ -239,6 +239,79 @@
     text-align: center;
 }
 
+/* Identitas akun Premium */
+
+.premium-account-link {
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    justify-items: center;
+    width: 10rem;
+    max-width: 10rem;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.premium-account-link.btn-full {
+    width: 100%;
+    max-width: none;
+}
+
+.premium-account-name,
+.premium-account-badge {
+    grid-area: 1 / 1;
+    transition: opacity 0.65s ease;
+}
+
+.premium-account-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.premium-account-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #e8c86d;
+    border-radius: 999px;
+    padding: 6px 11px;
+    background: linear-gradient(135deg, #fff8df 0%, #f5df9e 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px rgba(118, 80, 10, 0.12);
+    color: #76500a;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.premium-account-badge svg {
+    width: 14px;
+    height: 14px;
+}
+
+.premium-account-link .premium-account-name {
+    opacity: 1;
+}
+
+.premium-account-link .premium-account-badge {
+    opacity: 0;
+}
+
+.premium-account-link.is-premium-visible .premium-account-name {
+    opacity: 0;
+}
+
+.premium-account-link.is-premium-visible .premium-account-badge {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .premium-account-name,
+    .premium-account-badge {
+        transition: none;
+    }
+}
+
 /* Tampilan HP */
 
 @media (max-width: 560px) {

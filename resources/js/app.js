@@ -19,6 +19,10 @@ const periodeHargaSubscribe = document.getElementById(
     'subscribe-premium-period'
 );
 
+const durasiAksesPremiumSubscribe = document.querySelector(
+    '[data-premium-duration]'
+);
+
 const tombolPeriodeSubscribe = document.querySelectorAll(
     '[data-subscribe-period]'
 );
@@ -29,10 +33,12 @@ const daftarHargaSubscribe = {
     month: {
         harga: 'Rp29.000',
         periode: '/bulan',
+        durasi: '1 bulan',
     },
     year: {
         harga: 'Rp249.000',
         periode: '/tahun',
+        durasi: '1 tahun',
     },
 };
 
@@ -70,6 +76,22 @@ function ubahPeriodeSubscribe(periode) {
         periodeHargaSubscribe.textContent =
             daftarHargaSubscribe[periode].periode;
     }
+
+    if (durasiAksesPremiumSubscribe) {
+        durasiAksesPremiumSubscribe.textContent =
+            'Akses Deteksi Gambar tidak terbatas selama ' +
+            daftarHargaSubscribe[periode].durasi;
+    }
+}
+
+const akunPremium = document.querySelectorAll('[data-premium-account]');
+
+if (akunPremium.length > 0) {
+    window.setInterval(() => {
+        akunPremium.forEach((akun) => {
+            akun.classList.toggle('is-premium-visible');
+        });
+    }, 5000);
 }
 
 document.addEventListener('click', (event) => {
