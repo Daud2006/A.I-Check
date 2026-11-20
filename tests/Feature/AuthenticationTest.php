@@ -386,6 +386,8 @@ class AuthenticationTest extends TestCase
 
     public function test_subscription_modal_shows_the_updated_package_benefits(): void
     {
+        $this->seed(\Database\Seeders\PlanSeeder::class);
+
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('Rp0')

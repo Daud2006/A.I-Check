@@ -66,6 +66,7 @@ class DatabaseSchemaTest extends TestCase
             'user_id',
             'subscription_id',
             'provider',
+            'order_id',
             'provider_transaction_id',
             'amount',
             'currency',

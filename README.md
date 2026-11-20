@@ -20,6 +20,30 @@ that field in its response for compatibility. In the interface it is shown as
 **Probabilitas AI**; it is an estimate, not the certainty or accuracy of the
 category. Detector results can be wrong and are not proof of an image's origin.
 
+## Midtrans Sandbox Payments
+
+Set `MIDTRANS_IS_PRODUCTION=false`, `MIDTRANS_SERVER_KEY`, and
+`MIDTRANS_CLIENT_KEY` in the Laravel environment. The Server Key is backend
+only; the Client Key is used by the Sandbox Snap script. Do not put either key
+in source control or frontend build variables.
+
+Run the additive payment migration and seed the stable Premium plans:
+
+```powershell
+php artisan migrate
+php artisan db:seed --class="Database\Seeders\PlanSeeder"
+```
+
+Configure the Midtrans Sandbox Notification URL to
+`https://<public-host>/payments/midtrans/notifications`. For local development,
+the application must be reachable by Midtrans through a secure public tunnel.
+Payment activation is based on a verified notification or an authenticated
+server-side status check, not the browser callback.
+
+Premium uploads are limited by the AI Engine's configured per-file byte limit.
+Keep `AIDETECT_MAX_BYTES` in Laravel synchronized with the AI Engine setting;
+the default in both is 32 MiB. Free uploads remain limited to 10 MiB.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

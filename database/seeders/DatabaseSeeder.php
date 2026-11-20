@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        $this->call(PlanSeeder::class);
+
         $adminEmail = (string) env('ADMIN_SEED_EMAIL', 'admin@aicheck.local');
         $adminPassword = (string) env('ADMIN_SEED_PASSWORD', 'AICheckAdmin2026!');
 

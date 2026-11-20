@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckerController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,8 @@ Route::prefix('checker/analyses')->name('checker.analyses.')->group(function () 
     });
 });
 Route::get('/about', [AboutController::class, 'index'])->name('about');
+Route::post('/payments/midtrans/notifications', [PaymentController::class, 'notification'])
+    ->name('payments.midtrans.notifications');
 
 Route::middleware('auth')->group(function () {
     Route::get('/history', [HistoryController::class, 'index'])->name('history');
@@ -41,6 +44,16 @@ Route::middleware('auth')->group(function () {
         ->name('history.destroy');
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
+
+Route::middleware(['auth', 'not-banned'])->prefix('payments')->name('payments.')->group(function () {
+    Route::post('/checkout', [PaymentController::class, 'checkout'])
+        ->middleware('throttle:6,1')
+        ->name('checkout');
+    Route::get('/{paymentId}/status', [PaymentController::class, 'status'])
+        ->whereNumber('paymentId')
+        ->middleware('throttle:30,1')
+        ->name('status');
 });
 
 Route::get('/admin', [AdminController::class, 'index'])

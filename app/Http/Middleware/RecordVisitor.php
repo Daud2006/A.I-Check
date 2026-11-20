@@ -13,7 +13,11 @@ class RecordVisitor
     {
         $response = $next($request);
 
-        if (! $request->hasSession() || ! SchemaReady::hasVisitorsTable()) {
+        if (
+            $request->routeIs('payments.midtrans.notifications')
+            || ! $request->hasSession()
+            || ! SchemaReady::hasVisitorsTable()
+        ) {
             return $response;
         }
 

@@ -20,10 +20,11 @@
                     <h2 class="judul-upload">Tarik &amp; lepas gambar di sini</h2>
                     <p class="deskripsi-upload">atau pilih gambar dari perangkat Anda</p>
                     <button type="button" class="btn btn-light-blue tombol-utama" id="tombol-pilih-gambar">Pilih Gambar</button>
-                    <p class="catatan-upload" id="petunjuk-format-gambar">JPEG, PNG, atau WebP · Maksimal 10 MB</p>
+                    <p class="catatan-upload" id="petunjuk-format-gambar">JPEG, PNG, atau WebP · Maksimal {{ $maxUploadLabel }}</p>
                     <input type="file" id="input-gambar" accept="image/png,image/jpeg,image/webp"
                         aria-label="Pilih gambar untuk Deteksi Gambar" aria-describedby="petunjuk-format-gambar"
                         data-upload-url="{{ route('checker.analyses.store') }}"
+                        data-max-upload-bytes="{{ $maxUploadBytes }}"
                         data-login-url="{{ route('auth', ['mode' => 'login']) }}"
                         data-register-url="{{ route('auth', ['mode' => 'register']) }}" hidden>
                 </div>

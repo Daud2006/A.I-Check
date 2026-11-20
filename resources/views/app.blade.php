@@ -244,13 +244,26 @@
                 </button>
             </div>
 
+            @php
+                $monthlyPlan = $premiumPlans->get('premium-monthly');
+                $yearlyPlan = $premiumPlans->get('premium-yearly');
+            @endphp
             <div class="subscribe-period" aria-label="Periode Premium">
-                <button type="button" class="subscribe-period-button is-active" data-subscribe-period="month"
-                    aria-pressed="true">
+                <button type="button" class="subscribe-period-button is-active"
+                    data-subscribe-period="month"
+                    data-plan-slug="{{ $monthlyPlan?->slug }}"
+                    data-price-label="{{ $monthlyPlan ? 'Rp'.number_format((float) $monthlyPlan->price, 0, ',', '.') : '' }}"
+                    data-period-label="/bulan" data-duration="1 bulan"
+                    aria-pressed="true" @disabled(! $monthlyPlan)>
                     Bulanan
                 </button>
 
-                <button type="button" class="subscribe-period-button" data-subscribe-period="year" aria-pressed="false">
+                <button type="button" class="subscribe-period-button"
+                    data-subscribe-period="year"
+                    data-plan-slug="{{ $yearlyPlan?->slug }}"
+                    data-price-label="{{ $yearlyPlan ? 'Rp'.number_format((float) $yearlyPlan->price, 0, ',', '.') : '' }}"
+                    data-period-label="/tahun" data-duration="1 tahun"
+                    aria-pressed="false" @disabled(! $yearlyPlan)>
                     Tahunan <span>Hemat 28%</span>
                 </button>
             </div>
@@ -292,7 +305,9 @@
                     <h3>Premium</h3>
 
                     <div class="subscribe-price">
-                        <strong id="subscribe-premium-price">Rp29.000</strong>
+                        <strong id="subscribe-premium-price">
+                            {{ $monthlyPlan ? 'Rp'.number_format((float) $monthlyPlan->price, 0, ',', '.') : 'Belum tersedia' }}
+                        </strong>
                         <span id="subscribe-premium-period">/bulan</span>
                     </div>
 
@@ -306,21 +321,30 @@
                         <li>Mendapatkan Badge Premium</li>
                     </ul>
 
-                    <button type="button" class="btn btn-primary subscribe-plan-button" id="subscribe-premium-select">
+                    <button type="button" class="btn btn-primary subscribe-plan-button"
+                        id="subscribe-premium-select"
+                        data-checkout-url="{{ route('payments.checkout') }}"
+                        @disabled(! $monthlyPlan)>
                         Pilih Premium
                     </button>
                 </div>
 
             </div>
 
-            <p class="subscribe-note">
-                Paket Premium masih berupa pratinjau. Pembayaran dan aktivasi
-                fitur Premium belum dihubungkan.
+            <p class="subscribe-note" id="subscribe-payment-status" role="status" aria-live="polite">
+                Pembayaran diproses dengan Midtrans Sandbox.
             </p>
+            <button type="button" class="btn btn-secondary subscribe-payment-check" id="subscribe-payment-check" hidden>
+                Periksa status pembayaran
+            </button>
 
         </div>
     </div>
 
+    @if (config('services.midtrans.client_key'))
+        <script src="https://app.sandbox.midtrans.com/snap/snap.js"
+            data-client-key="{{ config('services.midtrans.client_key') }}" defer></script>
+    @endif
 </body>
 
 </html>

@@ -178,6 +178,44 @@ class AnalysisQuotaTest extends TestCase
         $this->assertDatabaseCount('usage_records', 0);
     }
 
+    public function test_free_user_still_cannot_upload_more_than_ten_mib(): void
+    {
+        $user = User::factory()->create();
+
+        $this->userUpload($user, UploadedFile::fake()->image('large.png')->size(10241))
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.image.0', 'Ukuran gambar maksimal 10 MB.');
+    }
+
+    public function test_premium_upload_limit_matches_the_ai_engine_byte_limit(): void
+    {
+        $user = User::factory()->create();
+        $plan = Plan::create([
+            'name' => 'Premium',
+            'slug' => 'premium',
+            'price' => 29000,
+            'currency' => 'IDR',
+            'billing_interval' => 'monthly',
+            'analysis_limit' => null,
+            'is_active' => true,
+        ]);
+        $subscription = new Subscription([
+            'plan_id' => $plan->id,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+        ]);
+        $subscription->status = 'active';
+        $user->subscriptions()->save($subscription);
+        $this->mock(LocalAiDetector::class)
+            ->shouldReceive('classify')
+            ->once()
+            ->andReturn($this->prediction());
+
+        $this->userUpload($user, UploadedFile::fake()->image('large.png')->size(10241))
+            ->assertCreated()
+            ->assertJsonPath('status', 'completed');
+    }
+
     public function test_detection_response_includes_actual_engine_evidence(): void
     {
         $user = User::factory()->create();
@@ -220,6 +258,39 @@ class AnalysisQuotaTest extends TestCase
             ->assertDontSee('Akun Free memiliki 3 kesempatan Deteksi Gambar per hari.');
     }
 
+    public function test_checker_page_shows_different_upload_limits_for_free_and_active_premium(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('checker'))
+            ->assertOk()
+            ->assertSee('data-max-upload-bytes="10485760"', false)
+            ->assertSee('Maksimal 10 MB');
+
+        $user = User::factory()->create();
+        $plan = Plan::create([
+            'name' => 'Premium',
+            'slug' => 'premium',
+            'price' => 29000,
+            'currency' => 'IDR',
+            'billing_interval' => 'monthly',
+            'analysis_limit' => null,
+            'is_active' => true,
+        ]);
+        $subscription = new Subscription([
+            'plan_id' => $plan->id,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDay(),
+        ]);
+        $subscription->status = 'active';
+        $user->subscriptions()->save($subscription);
+
+        $this->actingAs($user)
+            ->get(route('checker'))
+            ->assertOk()
+            ->assertSee('data-max-upload-bytes="33554432"', false)
+            ->assertSee('Maksimal 32 MB');
+    }
+
     public function test_registration_mode_can_be_opened_from_the_guest_limit_link(): void
     {
         $this->get(route('auth', ['mode' => 'register']))
@@ -237,11 +308,11 @@ class AnalysisQuotaTest extends TestCase
             ]);
     }
 
-    private function userUpload(User $user)
+    private function userUpload(User $user, ?UploadedFile $file = null)
     {
         return $this->actingAs($user)
             ->postJson(route('checker.analyses.store'), [
-                'image' => UploadedFile::fake()->image('free.png'),
+                'image' => $file ?? UploadedFile::fake()->image('free.png'),
             ]);
     }
 

@@ -24,7 +24,7 @@ const hasilAnalisis = document.getElementById('hasil-analisis');
 const pesanChecker = document.getElementById('pesan-checker');
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-const ukuranMaksimal = 10 * 1024 * 1024;
+const ukuranMaksimal = Number(inputGambar?.dataset.maxUploadBytes) || 10 * 1024 * 1024;
 const mimeDidukung = ['image/jpeg', 'image/png', 'image/webp'];
 let fileTerpilih = null;
 let urlPratinjau = '';
@@ -313,7 +313,8 @@ const pilihFile = (file) => {
 
     if (file.size > ukuranMaksimal) {
         resetPemeriksaan();
-        tampilkanPesan('Ukuran gambar maksimal 10 MB.', { error: true });
+        const ukuranMaksimalMB = Math.floor(ukuranMaksimal / 1024 / 1024);
+        tampilkanPesan(`Ukuran gambar maksimal ${ukuranMaksimalMB} MB.`, { error: true });
         return;
     }
 

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('auth'));
+        $middleware->validateCsrfTokens(except: ['payments/midtrans/notifications']);
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'not-banned' => EnsureUserIsNotBanned::class,

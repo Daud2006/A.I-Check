@@ -28,8 +28,6 @@ class CheckerController extends Controller
         private readonly ImageAnalysisExplanation $analysisExplanation,
     ) {}
 
-    private const UPLOAD_MAX_KILOBYTES = 10240;
-
     private const STORAGE_DISK = 'image-analyses';
 
     private const GUEST_COOKIE = 'aicheck_guest_usage';
@@ -37,6 +35,8 @@ class CheckerController extends Controller
     private const GUEST_LIMIT = 2;
 
     private const FREE_DAILY_LIMIT = 3;
+
+    private const FREE_MAX_BYTES = 10 * 1024 * 1024;
 
     private const QUOTA_LOCK_SECONDS = 180;
 
@@ -62,30 +62,53 @@ class CheckerController extends Controller
             }
         }
 
-        return view('deteksi.index');
+        $isPremium = $request->user() instanceof User && $request->user()->hasPremiumAccess();
+        $maxUploadBytes = $isPremium
+            ? (int) config('services.ai_detector.max_file_bytes', 33554432)
+            : self::FREE_MAX_BYTES;
+
+        return view('deteksi.index', [
+            'maxUploadBytes' => $maxUploadBytes,
+            'maxUploadLabel' => number_format($maxUploadBytes / (1024 * 1024), 0, ',', '.').' MB',
+        ]);
     }
 
     public function store(Request $request, LocalAiDetector $classifier): JsonResponse
     {
+        $user = $request->user();
+        $isPremium = $user instanceof User && $user->hasPremiumAccess();
+        $maxUploadBytes = $isPremium
+            ? (int) config('services.ai_detector.max_file_bytes', 33554432)
+            : self::FREE_MAX_BYTES;
+        if ($maxUploadBytes < 1) {
+            return response()->json([
+                'message' => 'Batas ukuran unggahan belum dikonfigurasi dengan benar.',
+            ], 503);
+        }
+
+        $maxUploadKilobytes = (int) ceil($maxUploadBytes / 1024);
+        $maxUploadMessage = $isPremium
+            ? 'Ukuran gambar melebihi batas teknis layanan AI ('.$this->formatBytes($maxUploadBytes).').'
+            : 'Ukuran gambar maksimal 10 MB.';
+
         $validated = $request->validate([
             'image' => [
                 'required',
                 'file',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:'.self::UPLOAD_MAX_KILOBYTES,
+                'max:'.$maxUploadKilobytes,
             ],
         ], [
             'image.required' => 'Pilih gambar yang akan diunggah.',
             'image.file' => 'File yang dikirim bukan unggahan yang valid.',
             'image.image' => 'File harus berupa gambar yang valid.',
             'image.mimes' => 'Format gambar yang didukung adalah JPEG, PNG, dan WebP.',
-            'image.max' => 'Ukuran gambar maksimal 10 MB.',
-            'image.uploaded' => 'Unggahan gagal. Pastikan ukuran gambar maksimal 10 MB.',
+            'image.max' => $maxUploadMessage,
+            'image.uploaded' => 'Unggahan gagal. '.$maxUploadMessage,
         ]);
 
         $file = $validated['image'];
-        $user = $request->user();
         if (! $user instanceof User) {
             $guestId = $this->guestIdentifier($request);
             if ($guestId === null) {
@@ -294,6 +317,11 @@ class CheckerController extends Controller
             ->where('created_at', '>=', $startOfDay)
             ->where('created_at', '<', $startOfDay->copy()->addDay())
             ->sum('quantity');
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        return number_format($bytes / (1024 * 1024), 0, ',', '.').' MB';
     }
 
     private function guestIdentifier(Request $request): ?string

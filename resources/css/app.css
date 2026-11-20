@@ -239,6 +239,20 @@
     text-align: center;
 }
 
+.subscribe-note.is-error {
+    color: #b91c1c;
+}
+
+.subscribe-note.is-success {
+    color: #15803d;
+}
+
+.subscribe-payment-check {
+    display: block;
+    margin: 8px auto 0;
+    cursor: pointer;
+}
+
 /* Identitas akun Premium */
 
 .premium-account-link {

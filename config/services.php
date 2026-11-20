@@ -52,9 +52,16 @@ return [
     ],
 
     'ai_detector' => [
-    'url' => env('AI_DETECTOR_URL', 'http://127.0.0.1:8000'),
-    'connect_timeout' => env('AI_DETECTOR_CONNECT_TIMEOUT', 5),
-    'timeout' => env('AI_DETECTOR_TIMEOUT', 65),
+        'url' => env('AI_DETECTOR_URL', 'http://127.0.0.1:8000'),
+        'connect_timeout' => env('AI_DETECTOR_CONNECT_TIMEOUT', 5),
+        'timeout' => env('AI_DETECTOR_TIMEOUT', 65),
+        'max_file_bytes' => (int) env('AIDETECT_MAX_BYTES', 33554432),
+    ],
+
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'is_production' => filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN),
     ],
 
 ];
