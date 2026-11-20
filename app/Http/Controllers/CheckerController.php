@@ -8,9 +8,13 @@ use App\Jobs\ClassifyImageAnalysis;
 use App\Models\ImageAnalysis;
 use App\Models\User;
 use App\Services\AnalysisQuotaService;
+use App\Services\LocalAiDetector;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -25,15 +29,25 @@ class CheckerController extends Controller
 
     private const STORAGE_DISK = 'image-analyses';
 
+    private const TRIAL_COOKIE = 'aic_guest_trial';
+
     // Menampilkan halaman deteksi.
     public function index(Request $request, AnalysisQuotaService $quota): View
     {
+        $user = $request->user();
+        $trialId = $user ? null : $request->cookie(self::TRIAL_COOKIE);
+        if (! $user && ! Str::isUuid($trialId)) {
+            $trialId = (string) Str::uuid();
+            Cookie::queue(Cookie::forever(self::TRIAL_COOKIE, $trialId));
+        }
+
         return view('deteksi.index', [
-            'quota' => $request->user() ? $quota->snapshot($request->user()) : null,
+            'quota' => $user ? $quota->snapshot($user) : null,
+            'trialUsed' => $trialId !== null && Cache::has('guest-trial:'.$trialId),
         ]);
     }
 
-    public function store(Request $request, AnalysisQuotaService $quota): JsonResponse
+    private function validatedImage(Request $request): UploadedFile
     {
         $validated = $request->validate([
             'image' => [
@@ -52,7 +66,79 @@ class CheckerController extends Controller
             'image.uploaded' => 'Unggahan gagal. Pastikan ukuran gambar maksimal 10 MB.',
         ]);
 
-        $file = $validated['image'];
+        return $validated['image'];
+    }
+
+    public function trial(Request $request, LocalAiDetector $detector): JsonResponse
+    {
+        $trialId = $request->cookie(self::TRIAL_COOKIE);
+        if (! Str::isUuid($trialId)) {
+            return response()->json(['message' => 'Muat ulang halaman Deteksi Gambar untuk memulai uji coba.'], 409);
+        }
+
+        $trialKey = 'guest-trial:'.$trialId;
+        $result = Cache::lock($trialKey.':running', 120)->get(function () use ($request, $detector, $trialKey): JsonResponse {
+            if (Cache::has($trialKey)) {
+                return response()->json([
+                    'message' => 'Uji coba gratis sudah digunakan. Masuk atau daftar untuk melanjutkan.',
+                    'code' => 'guest_trial_used',
+                ], 403);
+            }
+
+            $file = $this->validatedImage($request);
+            $disk = Storage::disk(self::STORAGE_DISK);
+            $storedPath = null;
+
+            try {
+                $storedPath = $file->store('guest-trials', self::STORAGE_DISK);
+                if (! is_string($storedPath) || $storedPath === '') {
+                    throw new RuntimeException('Private guest storage did not return a path.');
+                }
+
+                $name = basename(str_replace('\\', '/', $file->getClientOriginalName()));
+                $analysis = new ImageAnalysis([
+                    'original_filename' => preg_replace('/[\x00-\x1F\x7F]/', '', $name) ?: 'image',
+                    'image_path' => $storedPath,
+                    'mime_type' => $file->getMimeType(),
+                ]);
+                $prediction = $detector->classify($analysis);
+                if (! Cache::forever($trialKey, true)) {
+                    throw new RuntimeException('The guest trial usage could not be recorded.');
+                }
+
+                return response()->json([
+                    'status' => 'completed',
+                    'result_label' => $prediction['label'],
+                    'confidence_score' => $prediction['score'],
+                    'prediction_details' => $prediction['details'],
+                ], 201);
+            } catch (ImageClassificationException $exception) {
+                Log::warning('Guest image classification failed.', $exception->diagnosticContext());
+
+                return response()->json(['message' => $exception->getMessage()], $exception->httpStatus);
+            } catch (Throwable $exception) {
+                Log::warning('Guest image trial could not be completed.', ['exception_class' => $exception::class]);
+
+                return response()->json(['message' => 'Gambar belum dapat diperiksa. Silakan coba kembali.'], 500);
+            } finally {
+                if (is_string($storedPath) && $storedPath !== '') {
+                    try {
+                        if (! $disk->delete($storedPath)) {
+                            Log::warning('Failed to delete a temporary guest image.');
+                        }
+                    } catch (Throwable $exception) {
+                        Log::warning('Failed to delete a temporary guest image.', ['exception_class' => $exception::class]);
+                    }
+                }
+            }
+        });
+
+        return $result ?: response()->json(['message' => 'Uji coba sedang diproses. Tunggu sebentar.'], 409);
+    }
+
+    public function store(Request $request, AnalysisQuotaService $quota): JsonResponse
+    {
+        $file = $this->validatedImage($request);
         $user = $request->user();
         $storedPath = null;
 

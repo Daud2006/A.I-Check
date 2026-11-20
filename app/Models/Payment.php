@@ -10,6 +10,8 @@ class Payment extends Model
 {
     public const STATUSES = ['pending', 'paid', 'failed', 'refunded'];
 
+    protected $hidden = ['checkout_url'];
+
     protected $fillable = [
         'provider',
         'provider_transaction_id',
@@ -24,6 +26,7 @@ class Payment extends Model
             'amount' => 'decimal:2',
             'paid_at' => 'datetime',
             'verified_at' => 'datetime',
+            'checkout_url' => 'encrypted',
         ];
     }
 

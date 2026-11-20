@@ -130,6 +130,8 @@ class BillingAndTransactionsTest extends TestCase
         $this->assertSame('29000.00', $payment->amount);
         $this->assertSame('midtrans-transaction-test', $payment->provider_transaction_id);
         $this->assertSame($subscription->id, $payment->subscription_id);
+        $this->assertSame('https://app.sandbox.midtrans.com/snap/v4/redirection/test', $payment->checkout_url);
+        $this->assertNotSame($payment->checkout_url, $payment->getRawOriginal('checkout_url'));
 
         Http::assertSent(function (ClientRequest $request): bool {
             $payload = $request->data();
@@ -150,6 +152,59 @@ class BillingAndTransactionsTest extends TestCase
         $this->assertDatabaseCount('payments', 1);
         $this->assertDatabaseCount('subscriptions', 1);
         Http::assertSentCount(1);
+    }
+
+    public function test_owner_can_check_midtrans_status_and_activate_premium_without_a_webhook(): void
+    {
+        config(['midtrans.server_key' => self::SERVER_KEY, 'midtrans.is_production' => false]);
+        $owner = User::factory()->create();
+        [$payment, $subscription] = $this->createPendingPayment($owner);
+        $statusUrl = 'https://api.sandbox.midtrans.com/v2/AIC-PAY-'.$payment->id.'/status';
+        Http::fake([
+            $statusUrl => Http::sequence()
+                ->push(['status_code' => '404'])
+                ->push($this->notification($payment, 'settlement')),
+        ]);
+        $checkStatus = route('transactions.refresh', $payment);
+
+        $this->actingAs(User::factory()->create())->post($checkStatus)->assertNotFound();
+        Http::assertNothingSent();
+
+        $this->actingAs($owner)->post($checkStatus)->assertRedirect(route('transactions.show', $payment));
+        $this->assertSame('pending', $payment->fresh()->status);
+
+        $this->post($checkStatus)->assertRedirect(route('transactions.show', $payment));
+        $this->assertSame('paid', $payment->fresh()->status);
+        $this->assertSame('active', $subscription->fresh()->status);
+        Http::assertSent(fn (ClientRequest $request): bool =>
+            $request->url() === $statusUrl && $request->hasHeader('Authorization')
+        );
+    }
+
+    public function test_legacy_pending_checkout_reopens_the_same_order_without_creating_payment_records(): void
+    {
+        config(['midtrans.server_key' => self::SERVER_KEY, 'midtrans.is_production' => false]);
+        $owner = User::factory()->create();
+        [$payment] = $this->createPendingPayment($owner);
+        $payment->forceFill(['created_at' => now()->subMinutes(5)])->save();
+        $url = 'https://app.sandbox.midtrans.com/snap/v4/redirection/recovered';
+        Http::fake([
+            'https://api.sandbox.midtrans.com/v2/AIC-PAY-'.$payment->id.'/status' => Http::response(['status_code' => '404']),
+            'https://app.sandbox.midtrans.com/snap/v1/transactions' => Http::response(['redirect_url' => $url], 201),
+        ]);
+
+        $this->actingAs($owner)->post(route('transactions.refresh', $payment), ['reopen' => 1])
+            ->assertRedirect(route('transactions.show', $payment));
+        $this->get(route('transactions.show', $payment))->assertSee($url);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('subscriptions', 1);
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertSame($url, $payment->fresh()->checkout_url);
+        Http::assertSent(fn (ClientRequest $request): bool =>
+            $request->method() === 'POST'
+            && $request['transaction_details']['order_id'] === 'AIC-PAY-'.$payment->id
+            && $request['transaction_details']['gross_amount'] === 29000.0
+        );
     }
 
     public function test_invalid_inactive_or_unsupported_plans_cannot_be_checked_out(): void

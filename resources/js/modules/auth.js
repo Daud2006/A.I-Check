@@ -95,11 +95,12 @@ formulirLogout.forEach((form) => {
     });
 });
 
-const bukaModalOtorisasi = (mode = 'login') => {
+export const bukaModalOtorisasi = (mode = 'login', pesan = '') => {
     if (!modalOtorisasi) return;
     modalOtorisasi.classList.add('is-open');
     modalOtorisasi.setAttribute('aria-hidden', 'false');
     aturModeOtorisasi(mode);
+    if (pesan && deskripsiModal) deskripsiModal.textContent = pesan;
 };
 
 const tutupModalOtorisasi = () => {

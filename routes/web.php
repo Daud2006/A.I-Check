@@ -30,6 +30,9 @@ Route::middleware('guest')->group(function () {
 });
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/checker', [CheckerController::class, 'index'])->name('checker');
+Route::post('/checker/trial', [CheckerController::class, 'trial'])
+    ->middleware(['guest', 'throttle:5,1,guest-trial'])
+    ->name('checker.trial');
 Route::middleware('auth')->prefix('checker/analyses')->name('checker.analyses.')->group(function () {
     Route::post('/', [CheckerController::class, 'store'])->middleware('throttle:10,1')->name('store');
     Route::get('/{analysisId}', [CheckerController::class, 'show'])->whereNumber('analysisId')->name('show');
@@ -54,6 +57,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/transactions/{paymentId}', [BillingController::class, 'showTransaction'])
         ->whereNumber('paymentId')
         ->name('transactions.show');
+    Route::post('/transactions/{paymentId}/status', [BillingController::class, 'refreshTransaction'])
+        ->whereNumber('paymentId')
+        ->middleware('throttle:6,1')
+        ->name('transactions.refresh');
 
     Route::get('/history', [HistoryController::class, 'index'])->name('history');
     Route::delete('/history', [HistoryController::class, 'destroyAll'])->name('history.destroy-all');

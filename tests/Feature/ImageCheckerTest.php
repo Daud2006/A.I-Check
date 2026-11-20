@@ -100,6 +100,48 @@ class ImageCheckerTest extends TestCase
         Http::assertSentCount(3);
     }
 
+    public function test_guest_can_try_once_without_creating_history_or_retaining_the_image(): void
+    {
+        Storage::fake('image-analyses');
+        $this->fakeDetector();
+
+        $cookie = $this->get(route('checker'))->assertOk()->getCookie('aic_guest_trial', decrypt: false);
+        $this->withCredentials()->withUnencryptedCookie('aic_guest_trial', $cookie->getValue());
+
+        $this->postJson(route('checker.trial'), [])->assertUnprocessable();
+        $this->postJson(route('checker.trial'), [
+            'image' => UploadedFile::fake()->image('poster.png'),
+        ])->assertCreated()
+            ->assertJsonPath('status', 'completed')
+            ->assertJsonPath('result_label', 'AI-GENERATED');
+
+        $this->postJson(route('checker.trial'), [
+            'image' => UploadedFile::fake()->image('other.png'),
+        ])->assertForbidden()->assertJsonPath('code', 'guest_trial_used');
+        $this->get(route('checker'))->assertSee('Masuk untuk analisis lagi');
+        $this->assertDatabaseCount('image_analyses', 0);
+        $this->assertSame([], Storage::disk('image-analyses')->allFiles());
+        Http::assertSentCount(3);
+    }
+
+    public function test_guest_can_retry_after_the_detector_fails(): void
+    {
+        Storage::fake('image-analyses');
+        $this->fakeDetectorPayload([], 503);
+        $cookie = $this->get(route('checker'))->getCookie('aic_guest_trial', decrypt: false);
+        $this->withCredentials()->withUnencryptedCookie('aic_guest_trial', $cookie->getValue());
+
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $this->postJson(route('checker.trial'), [
+                'image' => UploadedFile::fake()->image('poster.png'),
+            ])->assertServerError();
+        }
+
+        $this->get(route('checker'))->assertSee('Coba 1 kali gratis tanpa akun.');
+        $this->assertSame([], Storage::disk('image-analyses')->allFiles());
+        Http::assertSentCount(6);
+    }
+
     public function test_detector_preserves_ai_edited_verdict(): void
     {
         Storage::fake('image-analyses');

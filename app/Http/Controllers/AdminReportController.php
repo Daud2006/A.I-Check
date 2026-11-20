@@ -87,9 +87,10 @@ class AdminReportController extends Controller
             ->get();
         $paidRevenueByCurrency = (clone $payments)
             ->where('status', 'paid')
-            ->select('currency', DB::raw('SUM(amount) as total_amount'))
-            ->groupBy('currency')
+            ->select('environment', 'currency', DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('currency', 'environment')
             ->orderBy('currency')
+            ->orderBy('environment')
             ->get();
         $transactionsByPlan = (clone $payments)
             ->leftJoin('subscriptions', 'subscriptions.id', '=', 'payments.subscription_id')
@@ -97,12 +98,14 @@ class AdminReportController extends Controller
             ->select(
                 'plans.name as plan_name',
                 'payments.currency',
+                'payments.environment',
                 DB::raw('COUNT(*) as transaction_count'),
                 DB::raw("SUM(CASE WHEN payments.status = 'paid' THEN payments.amount ELSE 0 END) as paid_revenue")
             )
-            ->groupBy('plans.name', 'payments.currency')
+            ->groupBy('plans.name', 'payments.currency', 'payments.environment')
             ->orderBy('plans.name')
             ->orderBy('payments.currency')
+            ->orderBy('payments.environment')
             ->get();
 
         return view('admin.reports.index', [
@@ -143,7 +146,7 @@ class AdminReportController extends Controller
                 $this->analysisExportQuery($filters),
             ],
             'transactions' => [
-                ['ID Transaksi', 'Nama Pengguna', 'Email', 'Paket', 'Jumlah', 'Mata Uang', 'Status', 'Provider', 'ID Provider', 'Dibayar', 'Dibuat'],
+                ['ID Transaksi', 'Nama Pengguna', 'Email', 'Paket', 'Jumlah', 'Mata Uang', 'Status', 'Provider', 'ID Provider', 'Dibayar', 'Dibuat', 'Lingkungan'],
                 $this->paymentExportQuery($filters),
             ],
         };
@@ -282,6 +285,7 @@ class AdminReportController extends Controller
                 'payments.provider_transaction_id',
                 'payments.paid_at',
                 'payments.created_at',
+                'payments.environment',
             ])
             ->orderBy('payments.id');
     }

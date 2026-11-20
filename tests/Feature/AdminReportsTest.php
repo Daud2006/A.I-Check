@@ -37,7 +37,9 @@ class AdminReportsTest extends TestCase
         $usage->imageAnalysis()->associate($ai);
         $owner->usageRecords()->save($usage);
 
-        $this->payment($owner, $subscription, 'paid', 'IDR', 29000);
+        $sandbox = $this->payment($owner, $subscription, 'paid', 'IDR', 29000);
+        $sandbox->environment = 'sandbox';
+        $sandbox->save();
         $this->payment($owner, $subscription, 'pending', 'IDR', 90000);
         $this->payment($owner, $subscription, 'paid', 'USD', 10);
         $this->payment($owner, $subscription, 'refunded', 'IDR', 5000);
@@ -67,9 +69,11 @@ class AdminReportsTest extends TestCase
             ->assertSee('REAL')
             ->assertSee('Ekspor CSV transaksi');
         $this->assertSame([
-            ['currency' => 'IDR', 'total_amount' => '58000'],
-            ['currency' => 'USD', 'total_amount' => '10'],
+            ['environment' => null, 'currency' => 'IDR', 'total_amount' => '29000'],
+            ['environment' => 'sandbox', 'currency' => 'IDR', 'total_amount' => '29000'],
+            ['environment' => null, 'currency' => 'USD', 'total_amount' => '10'],
         ], $response->viewData('paidRevenueByCurrency')->map(fn ($row): array => [
+            'environment' => $row->environment,
             'currency' => $row->currency,
             'total_amount' => (string) $row->total_amount,
         ])->all());

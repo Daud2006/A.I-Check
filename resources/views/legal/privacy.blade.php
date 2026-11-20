@@ -13,7 +13,7 @@
                 </section>
                 <section>
                     <h2>Gambar dan hasil</h2>
-                    <p>Gambar disimpan pada penyimpanan privat dan dianalisis oleh model lokal. Aplikasi menyimpan informasi file dan hasil agar Anda bisa melihatnya di Riwayat. Pemilik akun dapat membuka gambar melalui akun yang terkait, dan admin berwenang dapat melihat informasi analisis untuk pengelolaan layanan.</p>
+                    <p>Model lokal menganalisis gambar dari penyimpanan privat. Untuk pengguna yang masuk, aplikasi menyimpan gambar dan hasil di Riwayat. Admin berwenang dapat melihat informasi analisis untuk mengelola layanan. Untuk tamu, file digunakan sementara saat pemeriksaan dan cookie menandai penggunaan uji coba.</p>
                 </section>
                 <section>
                     <h2>Pembayaran</h2>

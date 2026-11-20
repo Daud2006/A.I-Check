@@ -70,11 +70,13 @@ class AdminController extends Controller
                 ->count();
             $paidRevenueByCurrency = Payment::query()
                 ->where('status', 'paid')
-                ->selectRaw('currency, SUM(amount) as total_amount')
-                ->groupBy('currency')
+                ->selectRaw('environment, currency, SUM(amount) as total_amount')
+                ->groupBy('currency', 'environment')
                 ->orderBy('currency')
+                ->orderBy('environment')
                 ->get()
                 ->map(fn (Payment $payment): array => [
+                    'environment' => $payment->environment,
                     'currency' => $payment->currency,
                     'amount' => (string) $payment->total_amount,
                 ])

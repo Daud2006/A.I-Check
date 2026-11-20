@@ -22,7 +22,9 @@
                         @endif
                     </p>
                 @elseif (auth()->guest())
-                    <p class="ringkasan-kuota">Masuk untuk memeriksa gambar dan melihat kuota analisis Anda.</p>
+                    <p class="ringkasan-kuota" id="ringkasan-kuota">{{ $trialUsed
+                        ? 'Uji coba gratis sudah digunakan.'
+                        : 'Coba 1 kali gratis tanpa akun.' }}</p>
                 @endif
             </div>
 
@@ -31,11 +33,12 @@
             <div id="kotak-upload" class="kotak-upload">
                 <div class="area-upload" id="area-drop-gambar">
                     <span class="ikon-upload">@include('icon', ['name' => 'upload', 'style' => 'width:32px;height:32px'])</span>
-                    <button type="button" class="btn btn-light-blue tombol-utama" id="tombol-pilih-gambar">Pilih Gambar</button>
+                    <button type="button" class="btn btn-light-blue tombol-utama" id="tombol-pilih-gambar">{{ $trialUsed ? 'Masuk untuk analisis lagi' : 'Pilih Gambar' }}</button>
                     <p class="catatan-upload" id="petunjuk-format-gambar">JPEG, PNG, atau WebP · Maksimal 10 MB</p>
                     <input type="file" id="input-gambar" accept="image/png,image/jpeg,image/webp"
                         aria-label="Pilih gambar untuk dianalisis" aria-describedby="petunjuk-format-gambar"
-                        data-upload-url="{{ route('checker.analyses.store') }}"
+                        data-upload-url="{{ route(auth()->check() ? 'checker.analyses.store' : 'checker.trial') }}"
+                        @guest data-guest-trial="{{ $trialUsed ? 'used' : 'available' }}" @endguest
                         data-status-url="{{ route('checker.analyses.show', ['analysisId' => '__ANALYSIS_ID__']) }}"
                         data-history-url="{{ route('history') }}"
                         data-auth-url="{{ route('auth') }}" hidden>

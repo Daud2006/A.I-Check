@@ -81,6 +81,7 @@
                     <span class="admin-stat-icon">@include('icon', ['name' => 'check'])</span>
                     <span class="admin-stat-label">Pendapatan sepanjang waktu</span>
                     @forelse ($paidRevenueByCurrency as $revenue)
+                        <span class="admin-stat-label">{{ match ($revenue['environment']) {'production' => 'Produksi', 'sandbox' => 'Sandbox', default => 'Lingkungan belum tercatat'} }}</span>
                         <strong class="admin-revenue-value">
                             {{ $revenue['currency'] }} {{ number_format((float) $revenue['amount'], 2, ',', '.') }}
                         </strong>

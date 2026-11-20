@@ -7,13 +7,16 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\AnalysisQuotaService;
+use App\Services\MidtransNotificationProcessor;
 use App\Services\MidtransSnapClient;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 use RuntimeException;
 
 class BillingController extends Controller
@@ -174,13 +177,14 @@ class BillingController extends Controller
             ]);
         }
 
+        $payment->checkout_url = $checkout['redirect_url'];
+        $payment->save();
+
         if ($checkout['transaction_id'] !== null) {
             Payment::query()->whereKey($payment->getKey())
                 ->whereNull('provider_transaction_id')
                 ->update(['provider_transaction_id' => $checkout['transaction_id']]);
         }
-
-        $request->session()->put('midtrans.checkout.'.$payment->getKey(), $checkout['redirect_url']);
 
         return redirect()->away($checkout['redirect_url']);
     }
@@ -222,6 +226,8 @@ class BillingController extends Controller
                 'amount',
                 'currency',
                 'status',
+                'payment_method',
+                'checkout_url',
                 'paid_at',
                 'created_at',
                 'updated_at',
@@ -232,8 +238,70 @@ class BillingController extends Controller
         return view('transactions.show', [
             'payment' => $payment,
             'checkoutUrl' => $payment->status === 'pending'
-                ? $request->session()->get('midtrans.checkout.'.$payment->getKey())
+                ? ($payment->checkout_url ?? $request->session()->get('midtrans.checkout.'.$payment->getKey()))
                 : null,
         ]);
+    }
+
+    public function refreshTransaction(
+        Request $request,
+        int $paymentId,
+        MidtransSnapClient $midtrans,
+        MidtransNotificationProcessor $processor,
+    ): RedirectResponse {
+        $payment = $request->user()->payments()->where('provider', 'midtrans')->findOrFail($paymentId);
+        $detail = redirect()->route('transactions.show', $payment);
+
+        if ($payment->status !== 'pending') {
+            return $detail;
+        }
+
+        try {
+            $status = $midtrans->getStatus($payment);
+            if ($status === null) {
+                if ($request->boolean('reopen')) {
+                    $reopened = Cache::lock('midtrans-reopen-'.$payment->id, 35)->get(function () use ($payment, $request, $midtrans): bool {
+                        $payment->refresh();
+                        if ($payment->status !== 'pending'
+                            || $payment->created_at->greaterThan(now()->subMinute())
+                            || $payment->verified_at !== null) {
+                            return false;
+                        }
+
+                        if ($payment->checkout_url !== null || $request->session()->has('midtrans.checkout.'.$payment->id)) {
+                            return true;
+                        }
+
+                        $plan = $payment->subscription?->plan;
+                        if (! $plan instanceof Plan) {
+                            return false;
+                        }
+
+                        $checkout = $midtrans->createCheckout($payment, $plan, $request->user(), route('transactions.index'));
+                        $payment->checkout_url = $checkout['redirect_url'];
+                        $payment->save();
+
+                        return true;
+                    });
+
+                    return $detail->with('payment_status_message', $reopened
+                        ? 'Tautan pembayaran tersedia. Klik Lanjutkan pembayaran.'
+                        : 'Tautan belum bisa dibuat ulang. Coba cek status pembayaran lagi.');
+                }
+
+                return $detail->with('payment_status_message', 'Midtrans belum mencatat status pembayaran ini.');
+            }
+
+            $processor->process($status);
+        } catch (RuntimeException|InvalidArgumentException $exception) {
+            Log::warning('Unable to refresh Midtrans payment status.', [
+                'payment_id' => $payment->id,
+                'exception_class' => $exception::class,
+            ]);
+
+            return $detail->with('payment_status_message', 'Status pembayaran belum dapat diperiksa. Coba lagi nanti.');
+        }
+
+        return $detail->with('payment_status_message', 'Status pembayaran sudah diperiksa di Midtrans.');
     }
 }

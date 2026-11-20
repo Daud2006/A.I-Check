@@ -92,6 +92,42 @@ class MidtransSnapClient
         return 'AIC-PAY-'.$payment->getKey();
     }
 
+    public function getStatus(Payment $payment): ?array
+    {
+        $this->assertConfigured();
+        $production = config('midtrans.is_production');
+        if ($payment->environment !== null && $payment->environment !== ($production ? 'production' : 'sandbox')) {
+            throw new RuntimeException('Lingkungan transaksi Midtrans berbeda.');
+        }
+
+        $baseUrl = $production ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com';
+        $orderId = $this->orderId($payment);
+        try {
+            $response = Http::acceptJson()
+                ->withBasicAuth((string) config('midtrans.server_key'), '')
+                ->withoutRedirecting()
+                ->connectTimeout(5)
+                ->timeout(10)
+                ->get($baseUrl.'/v2/'.$orderId.'/status');
+        } catch (ConnectionException $exception) {
+            throw new RuntimeException('Midtrans tidak dapat dihubungi.', previous: $exception);
+        }
+
+        $status = $response->json();
+        if ($response->notFound() || (string) ($status['status_code'] ?? '') === '404') {
+            return null;
+        }
+
+        if (! $response->successful() || ! is_array($status)
+            || ($status['order_id'] ?? null) !== $orderId
+            || ! is_string($status['gross_amount'] ?? null)
+            || ! is_string($status['transaction_status'] ?? null)) {
+            throw new RuntimeException('Status pembayaran dari Midtrans tidak dapat diverifikasi.');
+        }
+
+        return $status;
+    }
+
     private function isTrustedRedirect(string $url): bool
     {
         $parts = parse_url($url);

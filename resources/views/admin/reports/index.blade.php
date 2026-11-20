@@ -152,7 +152,9 @@
                 <div>
                     <h3 class="admin-report-subtitle">Pendapatan per mata uang</h3>
                     @forelse ($paidRevenueByCurrency as $row)
-                        <p>{{ $row->currency }} <strong>{{ number_format((float) $row->total_amount, 2, ',', '.') }}</strong></p>
+                        <p>{{ match ($row->environment) {'production' => 'Produksi', 'sandbox' => 'Sandbox', default => 'Lingkungan belum tercatat'} }}
+                            <strong>{{ $row->currency }} {{ number_format((float) $row->total_amount, 2, ',', '.') }}</strong>
+                        </p>
                     @empty
                         <p>Belum ada pembayaran berhasil pada periode/paket ini.</p>
                     @endforelse
@@ -162,11 +164,12 @@
                 <h3 class="admin-report-subtitle">Transaksi berdasarkan paket dan mata uang</h3>
                 @if ($transactionsByPlan->isNotEmpty())
                     <table class="admin-table">
-                        <thead><tr><th>Paket</th><th>Mata uang</th><th>Transaksi</th><th>Pendapatan</th></tr></thead>
+                        <thead><tr><th>Paket</th><th>Lingkungan</th><th>Mata uang</th><th>Transaksi</th><th>Pendapatan</th></tr></thead>
                         <tbody>
                             @foreach ($transactionsByPlan as $row)
                                 <tr>
                                     <td>{{ $row->plan_name ?? 'Paket tidak tersedia' }}</td>
+                                    <td>{{ match ($row->environment) {'production' => 'Produksi', 'sandbox' => 'Sandbox', default => 'Belum tercatat'} }}</td>
                                     <td>{{ $row->currency }}</td>
                                     <td>{{ number_format($row->transaction_count) }}</td>
                                     <td>{{ $row->currency }} {{ number_format((float) $row->paid_revenue, 2, ',', '.') }}</td>

@@ -1,4 +1,6 @@
 // Unggah gambar dan tampilkan hanya hasil yang dikembalikan backend.
+import { bukaModalOtorisasi } from './auth.js';
+
 const inputGambar = document.getElementById('input-gambar');
 const tombolPilihGambar = document.getElementById('tombol-pilih-gambar');
 const areaDropGambar = document.getElementById('area-drop-gambar');
@@ -30,6 +32,22 @@ let fileTerpilih = null;
 let urlPratinjau = '';
 let unggahanBerlangsung = false;
 let menungguAnalisis = false;
+const ujiCobaTamu = inputGambar?.dataset.guestTrial !== undefined;
+let ujiCobaTerpakai = inputGambar?.dataset.guestTrial === 'used';
+
+const tandaiUjiCobaTerpakai = () => {
+    ujiCobaTerpakai = true;
+    if (ringkasanKuota) ringkasanKuota.textContent = 'Uji coba gratis sudah digunakan.';
+    if (tombolPilihGambar) tombolPilihGambar.textContent = 'Masuk untuk analisis lagi';
+    if (tombolUnggahBaru) tombolUnggahBaru.textContent = 'Masuk untuk analisis lagi';
+};
+
+const mintaLoginJikaUjiCobaHabis = () => {
+    if (!ujiCobaTerpakai) return false;
+
+    bukaModalOtorisasi('login', 'Uji coba gratis sudah digunakan. Masuk atau daftar untuk melanjutkan.');
+    return true;
+};
 
 const elemenMarker = areaPratinjau
     ? [...areaPratinjau.querySelectorAll('.titik-marker')]
@@ -329,7 +347,7 @@ const resetPemeriksaan = () => {
 };
 
 const pilihFile = (file) => {
-    if (!file || unggahanBerlangsung) return;
+    if (!file || unggahanBerlangsung || mintaLoginJikaUjiCobaHabis()) return;
 
     if (!mimeDidukung.includes(file.type)) {
         resetPemeriksaan();
@@ -365,7 +383,7 @@ const pilihFile = (file) => {
 };
 
 const unggahGambar = () => {
-    if (!fileTerpilih || !inputGambar?.dataset.uploadUrl || unggahanBerlangsung) return;
+    if (!fileTerpilih || !inputGambar?.dataset.uploadUrl || unggahanBerlangsung || mintaLoginJikaUjiCobaHabis()) return;
 
     const data = new FormData();
     data.append('image', fileTerpilih);
@@ -385,7 +403,7 @@ const unggahGambar = () => {
     aturProgres(0);
 
     request.open('POST', inputGambar.dataset.uploadUrl);
-    request.timeout = 75000;
+    request.timeout = ujiCobaTamu ? 105000 : 75000;
     request.setRequestHeader('Accept', 'application/json');
     if (csrfToken) request.setRequestHeader('X-CSRF-TOKEN', csrfToken);
 
@@ -414,6 +432,7 @@ const unggahGambar = () => {
             unggahanBerlangsung = false;
             aturProgres(100);
             const predictionIsValid = tampilkanPrediksi(payload);
+            if (ujiCobaTamu) tandaiUjiCobaTerpakai();
             if (kemajuanAnalisis) kemajuanAnalisis.hidden = true;
             aturStatusTombol(predictionIsValid);
             return;
@@ -444,7 +463,10 @@ const unggahGambar = () => {
         }
 
         const validationMessage = payload.errors?.image?.[0];
-        if (request.status === 422) {
+        if (payload.code === 'guest_trial_used') {
+            tandaiUjiCobaTerpakai();
+            mintaLoginJikaUjiCobaHabis();
+        } else if (request.status === 422) {
             tampilkanPesan(validationMessage || payload.message || 'File gambar tidak valid.', { error: true });
         } else if (request.status === 429) {
             perbaruiKuota(payload.quota);
@@ -475,15 +497,18 @@ const unggahGambar = () => {
     request.send(data);
 };
 
-tombolPilihGambar?.addEventListener('click', () => inputGambar?.click());
+tombolPilihGambar?.addEventListener('click', () => {
+    if (!mintaLoginJikaUjiCobaHabis()) inputGambar?.click();
+});
 inputGambar?.addEventListener('change', () => pilihFile(inputGambar.files?.[0]));
 tombolGantiGambar?.addEventListener('click', () => {
-    if (!inputGambar || unggahanBerlangsung) return;
+    if (!inputGambar || unggahanBerlangsung || mintaLoginJikaUjiCobaHabis()) return;
     inputGambar.value = '';
     inputGambar.click();
 });
 tombolAnalisis?.addEventListener('click', unggahGambar);
 tombolUnggahBaru?.addEventListener('click', () => {
+    if (mintaLoginJikaUjiCobaHabis()) return;
     resetPemeriksaan();
     inputGambar?.click();
 });

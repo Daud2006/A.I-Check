@@ -52,8 +52,11 @@ class AdminDashboardTest extends TestCase
 
         $paidPayment = $this->createPayment($premiumUser, 'paid', 'IDR', 29000);
         $paidPayment->subscription()->associate($premiumSubscription);
+        $paidPayment->environment = 'production';
         $paidPayment->save();
-        $this->createPayment($premiumUser, 'paid', 'IDR', 1000);
+        $sandboxPayment = $this->createPayment($premiumUser, 'paid', 'IDR', 1000);
+        $sandboxPayment->environment = 'sandbox';
+        $sandboxPayment->save();
         $this->createPayment($premiumUser, 'paid', 'USD', 10);
         $this->createPayment($freeUser, 'pending', 'IDR', 50000);
         $this->createPayment($freeUser, 'failed', 'IDR', 70000);
@@ -112,8 +115,9 @@ class AdminDashboardTest extends TestCase
 
         $this->assertSame(
             [
-                ['currency' => 'IDR', 'amount' => '30000'],
-                ['currency' => 'USD', 'amount' => '10'],
+                ['environment' => 'production', 'currency' => 'IDR', 'amount' => '29000'],
+                ['environment' => 'sandbox', 'currency' => 'IDR', 'amount' => '1000'],
+                ['environment' => null, 'currency' => 'USD', 'amount' => '10'],
             ],
             $response->viewData('paidRevenueByCurrency')
         );
