@@ -8,6 +8,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use InvalidArgumentException;
@@ -37,7 +38,7 @@ class User extends Authenticatable
         'email',
         'password',
     ];
-
+    
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -58,6 +59,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_banned' => 'boolean',
+            'banned_at' => 'datetime',
+            'unbanned_at' => 'datetime',
         ];
     }
 
@@ -91,6 +95,21 @@ class User extends Authenticatable
     public function usageRecords(): HasMany
     {
         return $this->hasMany(UsageRecord::class);
+    }
+
+    public function banHistories(): HasMany
+    {
+        return $this->hasMany(BanHistory::class);
+    }
+
+    public function bannedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'banned_by');
+    }
+
+    public function unbannedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'unbanned_by');
     }
 
     public function hasPremiumAccess(): bool

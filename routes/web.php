@@ -26,7 +26,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::get('/checker', [CheckerController::class, 'index'])->name('checker');
 Route::prefix('checker/analyses')->name('checker.analyses.')->group(function () {
     Route::post('/', [CheckerController::class, 'store'])->middleware('throttle:10,1')->name('store');
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth', 'not-banned'])->group(function () {
         Route::get('/{analysisId}', [CheckerController::class, 'show'])->whereNumber('analysisId')->name('show');
         Route::get('/{analysisId}/image', [CheckerController::class, 'image'])->whereNumber('analysisId')->name('image');
     });
@@ -44,5 +44,11 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/admin', [AdminController::class, 'index'])
-    ->middleware('auth')
+    ->middleware(['auth', 'admin', 'not-banned'])
     ->name('admin');
+Route::middleware(['auth', 'admin', 'not-banned'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/accounts', [AdminController::class, 'accounts'])->name('accounts');
+    Route::get('/users/{user}', [AdminController::class, 'show'])->name('users.show');
+    Route::post('/users/{user}/ban', [AdminController::class, 'ban'])->name('users.ban');
+    Route::post('/users/{user}/unban', [AdminController::class, 'unban'])->name('users.unban');
+});

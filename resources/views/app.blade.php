@@ -12,8 +12,10 @@
 
 <body
     data-login-success="{{ session()->pull('login_success', false) ? 'true' : 'false' }}"
+    data-admin-login-success="{{ session()->pull('admin_login_success', false) ? 'true' : 'false' }}"
     data-registration-success="{{ session()->pull('registration_success', false) ? 'true' : 'false' }}"
     data-logout-success="{{ session()->pull('logout_success', false) ? 'true' : 'false' }}"
+    data-admin-logout-success="{{ session()->pull('admin_logout_success', false) ? 'true' : 'false' }}"
 >
     <div class="kerangka-situs">
         {{-- Header --}}

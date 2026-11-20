@@ -3,6 +3,7 @@ import './modules/navigation.js';
 import './modules/auth.js';
 import './modules/checker.js';
 import './modules/history.js';
+import './modules/admin.js';
 
 /* ================================
     MODAL SUBSCRIBE A.I CHECK

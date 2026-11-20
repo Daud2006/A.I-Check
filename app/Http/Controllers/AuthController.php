@@ -21,6 +21,9 @@ class AuthController extends Controller
     public function index(): RedirectResponse|View
     {
         if (Auth::check()) {
+            if (Auth::user()->role === User::ROLE_ADMIN) {
+                return redirect()->route('admin');
+            }
             return redirect()->route('home');
         }
 
@@ -83,7 +86,19 @@ class AuthController extends Controller
             ]);
         }
 
+        $user = Auth::user();
+        if ($user->is_banned) {
+            Auth::guard('web')->logout();
+            throw ValidationException::withMessages([
+                'email' => 'Email atau kata sandi yang Anda masukkan salah.',
+            ]);
+        }
+
         $request->session()->regenerate();
+
+        if ($user->role === User::ROLE_ADMIN) {
+            return redirect()->route('admin')->with('admin_login_success', true);
+        }
 
         return redirect()->intended(route('home'))->with('login_success', true);
     }
@@ -192,10 +207,15 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        $wasAdmin = Auth::guard('web')->user()?->role === User::ROLE_ADMIN;
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($wasAdmin) {
+            return redirect()->route('auth')->with('admin_logout_success', true);
+        }
 
         return redirect()->route('home')->with('logout_success', true);
     }

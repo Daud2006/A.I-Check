@@ -49,6 +49,18 @@ if (document.body?.dataset.loginSuccess === 'true') {
     });
 }
 
+if (document.body?.dataset.adminLoginSuccess === 'true') {
+    Swal.fire({
+        title: 'Berhasil Masuk, Admin!',
+        text: 'Login berhasil. Anda kini dapat melanjutkan menggunakan panel Admin A.I-Check.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        buttonsStyling: false,
+        customClass: kelasPopupAutentikasi,
+    });
+}
+
 if (document.body?.dataset.registrationSuccess === 'true') {
     Swal.fire({
         title: 'Akun Berhasil Dibuat',
